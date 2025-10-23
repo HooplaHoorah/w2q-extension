@@ -1,0 +1,22 @@
+{
+  "name": "Web-to-Quest",
+  "description": "Turn any on-page math into a guided quest (steps, hints, answer check).",
+  "version": "0.1.0",
+  "manifest_version": 3,
+  "action": { "default_title": "Web-to-Quest" },
+  "side_panel": { "default_path": "sidepanel.html" },
+  "permissions": ["sidePanel", "activeTab", "scripting", "storage", "contextMenus"],
+  "background": { "service_worker": "background.js" },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
