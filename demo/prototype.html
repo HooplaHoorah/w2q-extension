@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Web-to-Quest Prototype</title>
+<style>
+body { font-family: sans-serif; margin: 0; padding: 0; display: flex; height: 100vh; }
+#left, #right { padding: 1em; overflow-y: auto; }
+#left { width: 50%; border-right: 1px solid #ccc; }
+#right { width: 50%; }
+textarea, input { width: 100%; }
+button { margin-top: 0.5em; }
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<div id="left">
+  <h2>Problem</h2>
+  <textarea id="problem" rows="4" placeholder="Select a math problem..."></textarea>
+  <button id="stepsBtn">Generate steps</button>
+  <button id="hintBtn">Hint me</button>
+  <div id="steps" class="hidden"></div>
+  <div id="hint" class="hidden"></div>
+  <h3>Answer</h3>
+  <input id="answer" placeholder="Enter answer">
+  <button id="checkBtn">Check answer</button>
+  <div id="feedback" class="hidden"></div>
+  <button id="variantsBtn">Generate printable variants</button>
+  <div id="variants" class="hidden"></div>
+</div>
+<div id="right">
+  <h2>Teacher Pack</h2>
+  <div id="teacherPack" class="hidden"></div>
+</div>
+
+<script>
+document.getElementById('stepsBtn').onclick = function() {
+  const problem = document.getElementById('problem').value;
+  const stepsDiv = document.getElementById('steps');
+  if (!problem) { alert('No problem selected'); return; }
+  stepsDiv.classList.remove('hidden');
+  // simple stub: show placeholder steps
+  stepsDiv.textContent = 'Steps to solve: (stub) break down the problem and solve sequentially.';
+};
+document.getElementById('hintBtn').onclick = function() {
+  const hintDiv = document.getElementById('hint');
+  hintDiv.classList.remove('hidden');
+  hintDiv.textContent = 'Hint: Focus on order of operations or isolate variables (stub).';
+};
+document.getElementById('checkBtn').onclick = function() {
+  const problem = document.getElementById('problem').value;
+  const answer = document.getElementById('answer').value;
+  const feedback = document.getElementById('feedback');
+  if (!problem) { alert('No problem selected'); return; }
+  if (!answer) { alert('Please enter an answer'); return; }
+  let expected;
+  try {
+    expected = eval(problem.replace(/×/g,'*'));
+  } catch(e) {
+    expected = null;
+  }
+  const correct = (expected !== null && parseFloat(answer) === expected);
+  feedback.classList.remove('hidden');
+  feedback.textContent = correct ? 'Correct! \u2713' : 'Incorrect. \u2717 The correct answer is ' + expected;
+};
+document.getElementById('variantsBtn').onclick = function() {
+  const variants = document.getElementById('variants');
+  variants.classList.remove('hidden');
+  variants.textContent = 'Variant problems and answer key: (stub) ...';
+};
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'W2Q_SELECTION') {
+    document.getElementById('problem').value = e.data.text;
+  }
+});
+</script>
+</body>
+</html>
