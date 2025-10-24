@@ -8,7 +8,7 @@ const normalize = (txt = '') =>
     .replace(/[\u00D7\u2715\u2716\u00B7]/g, '*')
     .replace(/[\u00F7\u2044\u2215]/g, '/')
     .replace(/[\u2795]/g, '+')
-    .trrim();
+    .trim();
 
 const sanitize = (expr='') => {
   expr = normalize(expr);
@@ -201,4 +201,5 @@ window.addEventListener("message", (e) => {
   const t = (e.data.text || "").trim();
   if (t) $("#problem").value = t;
 });
+
 
