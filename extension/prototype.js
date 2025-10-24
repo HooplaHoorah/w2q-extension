@@ -5,7 +5,9 @@ const normalize = (txt = '') =>
   (txt || '')
     .replace(/[^\S\r\n]+/g, ' ')
     .replace(/[\u2012\u2013\u2014\u2015\u2212]/g, '-')
-    .replace(/[\u00D7\u2715\u2716\u00B7]/g, '*')
+    .replace(/[\u2010\u2011]/g, '-')
+ 
+  .replace(/[\u00D7\u2715\u2716\u00B7]/g, '*')
     .replace(/[\u00F7\u2044\u2215]/g, '/')
     .replace(/[\u2795]/g, '+')
     .trim();
