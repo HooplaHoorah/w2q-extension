@@ -17,6 +17,9 @@ const sanitize = (expr='') => {
   expr = normalize(expr);
   // remove leading words like "solve", etc.
   expr = expr.replace(/(?:solve|evaluate|compute|find|what is|=\s*\?|\?)/gi,'').trim();
+    // convert x or X to * when not an equation
+  if (!/=/.test(expr)) expr = expr.replace(/[xX]/g, '*');
+  
   // allow linear "ax + b = c" with x
   if (/=/.test(expr) && /x/.test(expr) && !/[a-wy-zA-WY-Z]/.test(expr)) return expr;
   // else keep only safe chars
@@ -204,6 +207,7 @@ window.addEventListener("message", (e) => {
   const t = (e.data.text || "").trim();
   if (t) $("#problem").value = t;
 });
+
 
 
 
