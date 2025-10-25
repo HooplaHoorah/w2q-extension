@@ -1,27 +1,25 @@
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: "w2q-send-selection",
-    title: "Send selection → Web-to-Quest",
-    contexts: ["selection"]
-  });
+// --- background.js (v3.3) ---
+const KEY = 'W2Q_SELECTION';
 
-  // Let users click the toolbar icon to open the side panel
-  try { chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }); } catch {}
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: 'w2q_send_selection',
+      title: 'Send selection → Web-to-Quest',
+      contexts: ['selection'],
+    });
+  });
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId !== "w2q-send-selection" || !tab?.id) return;
-
-  const text = info.selectionText || "";
-  await chrome.storage.session.set({ w2q_latestSelection: text });
-
-  // IMPORTANT: path is relative to the extension root, not /extension/
-  await chrome.sidePanel.setOptions({
-    tabId: tab.id,
-    path: "sidepanel.html",
-    enabled: true
-  });
-
-  // Will fail quietly on chrome://newtab — use a normal https page to test
-  try { await chrome.sidePanel.open({ tabId: tab.id }); } catch {}
+  if (info.menuItemId !== 'w2q_send_selection' || !tab?.id) return;
+  try {
+    await chrome.sidePanel.open({ tabId: tab.id }); // uses manifest default_path
+    const text = (info.selectionText || '').toString().trim();
+    const bucket = chrome.storage?.session ?? chrome.storage.local;
+    await bucket.set({ [KEY]: text });
+    // No runtime.sendMessage call; panel will pick up via storage listeners
+  } catch (err) {
+    console.warn('[W2Q] ctxmenu flow error', err);
+  }
 });

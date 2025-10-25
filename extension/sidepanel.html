@@ -1,9 +1,70 @@
 <!doctype html>
-<meta charset="utf-8">
-<title>Web-to-Quest</title>
-<style>
-  html,body { height:100%; margin:0; }
-  iframe { width:100%; height:100%; border:0; }
-</style>
-<iframe id="proto" src="prototype.html"></iframe>
-<script type="module" src="sidepanel.js"></script>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Web-to-Quest</title>
+    <style>
+      :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+      body { margin: 12px; }
+      h3 { margin: 16px 0 8px; }
+      textarea, input[type="text"] { width: 100%; box-sizing: border-box; padding: 8px; font-size: 14px; }
+      textarea { min-height: 70px; }
+      button { padding: 8px 10px; font-size: 14px; margin: 6px 6px 6px 0; cursor: pointer; }
+      .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .out { border: 1px solid #ddd; padding: 8px; border-radius: 6px; min-height: 40px; margin: 6px 0; white-space: pre-wrap; }
+      .out[data-expandable] { max-height: 160px; overflow: hidden; transition: max-height .25s ease; }
+      .out[data-expanded="true"] { max-height: none; overflow: visible; }
+      .linkbtn { border: none; background: none; color: #0b57d0; padding: 0; cursor: pointer; font: inherit; }
+      .linkbtn:hover { text-decoration: underline; }
+      .muted { color: #666; }
+    </style>
+  </head>
+  <body>
+
+    <div class="info" id="howto" style="border:1px solid #e0e0e0;background:#fafafa;padding:10px;border-radius:8px;margin-bottom:12px;">
+      <strong>How to use</strong>
+      <ol style="margin:8px 0 0 18px;padding:0;">
+        <li>Select a math expression on any page.</li>
+        <li>Right‑click → <em>Send selection → Web‑to‑Quest</em> (or paste into <strong>Problem</strong>).</li>
+        <li>Click <strong>Generate steps</strong> and/or <strong>Hint me</strong> for guidance.</li>
+        <li>Type your answer, then click <strong>Check answer</strong>. The correct result is only shown here.</li>
+      </ol>
+    
+</div>
+
+    <div class="info" id="settings" style="border:1px solid #e0e0e0;background:#f6fbff;padding:10px;border-radius:8px;margin-bottom:12px;">
+      <strong>Settings</strong>
+      <div style="margin-top:6px; display:flex; align-items:center; gap:10px;">
+        <label><input type="checkbox" id="aiToggle"> Enable AI features (Gemini Nano, if available)</label>
+        <span id="aiStatus" class="muted">AI: checking…</span>
+      </div>
+    </div>
+
+    <h3>Problem</h3>
+    <textarea id="problem" name="problem" placeholder="Select text, then right-click → Send selection → Web-to-Quest."></textarea>
+    <div class="row">
+      <button data-btn="steps" id="btnSteps">Generate steps</button>
+      <button data-btn="hint" id="btnHint">Hint me</button>
+      <button data-btn="explain" id="btnExplain" disabled title="Enable AI in Settings">Explain this step (AI)</button>
+    </div>
+
+    <h3 id="answer-label">Answer</h3>
+    <input id="answer" name="answer" type="text" autocomplete="off" placeholder="Type your answer…" />
+    <div>
+      <button data-btn="check" id="btnCheck">Check answer</button>
+      <button data-btn="variants" id="btnVariants" disabled title="Enable AI in Settings">Generate printable variants (AI)</button>
+    </div>
+
+    <h3>Outputs</h3>
+    <div class="muted" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">Steps <button class="linkbtn" id="stepsToggle" hidden>Show all</button></div>
+    <div class="out" id="outSteps" data-expandable></div>
+    <div class="muted">Hints</div>
+    <div class="out" id="outHints"></div>
+    <div class="muted">Check Answer</div>
+    <div class="out" id="outAnswer"></div>
+
+    <script src="prototype.js" defer></script>
+    <script src="ai-stubs.js" defer></script>
+    <script src="sidepanel.js" defer></script>
+  </body>
+</html>
