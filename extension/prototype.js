@@ -1,213 +1,157 @@
-// ---- helpers ----
-const $ = (s) => document.querySelector(s);
+// --- prototype.js (v3.7: CSP-safe, clean, namespaced) ---
+(function(g){
+  'use strict';
 
-const normalize = (txt = '') =>
-  (txt || '')
-    .replace(/[^\S\r\n]+/g, ' ')
-    .replace(/[\u2012\u2013\u2014\u2015\u2212]/g, '-')
-    .replace(/[\u2010\u2011]/g, '-')
- 
-  .replace(/[\u00D7\u2715\u2716\u00B7]/g, '*')
-    .replace(/[\u00F7\u2044\u2215]/g, '/')
-    
-      .replace(/\b[xX]\b/g, '*').replace(/[\u2795]/g, '+')
-    .trim();
+  function normalizeExpr(expr='') {
+    return (expr || '')
+      .replace(/×/g, '*')
+      .replace(/÷/g, '/')
+      .replace(/−/g, '-')
+      .replace(/,/g, '')
+      .trim();
+  }
 
-const sanitize = (expr='') => {
-  expr = normalize(expr);
-  // remove leading words like "solve", etc.
-  expr = expr.replace(/(?:solve|evaluate|compute|find|what is|=\s*\?|\?)/gi,'').trim();
-    // convert x or X to * when not an equation
-  if (!/=/.test(expr)) expr = expr.replace(/[xX]/g, '*');
-  
-  // allow linear "ax + b = c" with x
-  if (/=/.test(expr) && /x/.test(expr) && !/[a-wy-zA-WY-Z]/.test(expr)) return expr;
-  // else keep only safe chars
-  return expr.replace(/[^0-9+\-*/().^\s]/g,'').trim();
-};
+  function tokenize(s) {
+    const tokens = [];
+    let i = 0;
+    while (i < s.length) {
+      const ch = s[i];
+      if (/\s/.test(ch)) { i++; continue; }
+      if (/[()+\-*/]/.test(ch)) {
+        if (ch === '-' && (tokens.length === 0 || /[+\-*/(]/.test(tokens[tokens.length-1]))) {
+          tokens.push('u-');
+        } else {
+          tokens.push(ch);
+        }
+        i++; continue;
+      }
+      if (/\d|\./.test(ch)) {
+        let j = i, dot = 0;
+        while (j < s.length && /[\d.]/.test(s[j])) {
+          if (s[j] === '.') { dot++; if (dot > 1) break; }
+          j++;
+        }
+        const num = s.slice(i, j);
+        if (!/^\d*\.?\d+$/.test(num)) return null;
+        tokens.push(num);
+        i = j; continue;
+      }
+      return null;
+    }
+    return tokens;
+  }
 
-const safeEval = (expr) => {
-  const e = expr.replace(/\^/g,'**'); // caret → exponent
-  if (!/^[-+/*()0-9.\s*]+$/.test(e)) throw new Error('Unsafe');
-  if (/^\s*[*/]/.test(e)) throw new Error('Malformed');
-  if (/[+\-*/]{3,}/.test(e)) throw new Error('Malformed');
-  const fn = new Function('return ('+e+')');
-  const v = fn();
-  if (typeof v !== 'number' || !isFinite(v)) throw new Error('Bad result');
-  return v;
-};
+  function evalSafe(expr) {
+    const s = normalizeExpr(expr);
+    if (!s) return NaN;
+    const tokens = tokenize(s);
+    if (!tokens) return NaN;
 
-const fmt = (n) => Number.isInteger(n) ? String(n) : String(Math.round(n*1000)/1000);
+    const prec = { 'u-':3, '*':2, '/':2, '+':1, '-':1 };
+    const rightAssoc = { 'u-': true };
+    const out = [];
+    const ops = [];
 
-// solve ax + b = c
-const solveLinear = (eq) => {
-  const s = normalize(eq);
-  const m = s.match(/^\s*([\-+]?\d*(?:\.\d+)?)\s*\*?\s*x\s*([+\-]\s*\d+(?:\.\d+)?)?\s*=\s*([\-+]?\d+(?:\.\d+)?)\s*$/i);
-  if (!m) return null;
-  const a = m[1] === '' || m[1] === '+' || m[1] == null ? 1 : Number(m[1]);
-  const b = m[2] ? Number(m[2].replace(/\s+/g,'')) : 0;
-  const c = Number(m[3]);
-  const x = (c - b) / a;
-  return { a,b,c,x };
-};
+    function pop() {
+      const op = ops.pop();
+      if (op === 'u-') {
+        const a = out.pop();
+        out.push(-a);
+      } else {
+        const b = out.pop(), a = out.pop();
+        if (a === undefined || b === undefined) throw new Error('bad expression');
+        switch(op){
+          case '+': out.push(a+b); break;
+          case '-': out.push(a-b); break;
+          case '*': out.push(a*b); break;
+          case '/': out.push(a/b); break;
+        }
+      }
+    }
 
-// build steps for arithmetic or simple linear
-const stepsFor = (expr) => {
-  expr = sanitize(expr);
-  const lin = solveLinear(expr);
-  if (lin) {
-    const {a,b,c,x} = lin;
+    for (const t of tokens) {
+      if (/^\d*\.?\d+$/.test(t)) {
+        out.push(parseFloat(t));
+      } else if (t in prec) {
+        while (ops.length) {
+          const top = ops[ops.length-1];
+          if (top in prec && ((rightAssoc[t] && prec[t] < prec[top]) || (!rightAssoc[t] && prec[t] <= prec[top]))) {
+            pop();
+          } else break;
+        }
+        ops.push(t);
+      } else if (t === '(') {
+        ops.push(t);
+      } else if (t === ')') {
+        while (ops.length && ops[ops.length-1] !== '(') pop();
+        if (ops.pop() !== '(') return NaN;
+      } else {
+        return NaN;
+      }
+    }
+    while (ops.length) {
+      if (ops[ops.length-1] === '(') return NaN;
+      pop();
+    }
+    const res = out.pop();
+    return (out.length === 0 && Number.isFinite(res)) ? res : NaN;
+  }
+
+  function generateSteps(expr='') {
+    const s = normalizeExpr(expr);
+    if (!s) return 'Enter or send a problem first.';
     const steps = [];
-    if (b!==0) steps.push(`Subtract ${fmt(b)} from both sides: ${fmt(a)}x = ${fmt(c-b)}`);
-    if (a!==1) steps.push(`Divide both sides by ${fmt(a)}: x = ${fmt((c-b)/a)}`);
-    steps.push(`Solution: x = ${fmt(x)}`);
-    return { steps, answer:x };
+    steps.push(`Original: ${s}`);
+    steps.push('Rule: Do multiplication and division before addition and subtraction.');
+
+    // Avoid leaking partials across groups
+    if (/[()]/.test(s)) return steps.join('\n');
+
+    if (/[*\/]/.test(s)) {
+      try {
+        const mid = s.replace(/(-?\d+(?:\.\d+)?)\s*([*/])\s*(-?\d+(?:\.\d+)?)/g, (m,a,op,b)=> {
+          const av = parseFloat(a), bv = parseFloat(b);
+          return op === '*' ? (av*bv).toString() : (av/bv).toString();
+        });
+        if (mid !== s) steps.push(`After × and ÷: ${mid}`);
+      } catch {}
+    } else if (/[+\-]/.test(s)) {
+      const m = s.match(/^\s*(-?\d+(?:\.\d+)?)\s*([+\-])\s*(-?\d+(?:\.\d+)?)/);
+      if (m) {
+        const a = parseFloat(m[1]), op = m[2], b = parseFloat(m[3]);
+        const partial = (op === '+') ? (a + b) : (a - b);
+        const tail = s.slice(m[0].length);
+        const after = String(partial) + tail;
+        steps.push(`After first +/−: ${after}`);
+      }
+    }
+    return steps.join('\n');
   }
 
-  let work = expr;
-  const steps = [];
-
-  // evaluate parentheses first
-  const paren = /\(([^()]+)\)/;
-  let guard = 0;
-  while (paren.test(work) && guard < 20) {
-    const m = work.match(paren);
-    const inside = m[1];
-    const val = safeEval(inside);
-    steps.push(`Evaluate (${inside}) = ${fmt(val)}`);
-    work = work.replace(paren, String(val));
-    guard++;
-  }
-  if (guard >= 20) throw new Error('Loop guard');
-
-  const evalMatch = (re, label) => {
-    const m = work.match(re);
-    if (!m) return false;
-    const a = parseFloat(m[1]);
-    const op = m[2];                   // <-- FIX: operator is group 2
-    const b = parseFloat(m[3]);
-    let val = 0;
-    if (op === '*') val = a*b;
-    else if (op === '/') val = a/b;
-    else if (op === '+') val = a+b;
-    else if (op === '-') val = a-b;
-    steps.push(`${label}: ${fmt(a)} ${op} ${fmt(b)} = ${fmt(val)}`);
-    work = work.replace(m[0], String(val));
-    return true;
-  };
-
-  guard = 0;
-  while (/[*/]/.test(work) && guard < 30) {
-    if (!evalMatch(/(-?\d+(?:\.\d+)?)\s*([*/])\s*(-?\d+(?:\.\d+)?)/, 'Multiply/Divide')) break;
-    guard++;
-  }
-  guard = 0;
-  while (/[+\-]/.test(work) && /-?\d/.test(work) && guard < 30) {
-    if (!evalMatch(/(-?\d+(?:\.\d+)?)\s*([+\-])\s*(-?\d+(?:\.\d+)?)/, 'Add/Subtract')) break;
-    guard++;
+  function genHint(expr='') {
+    const s = normalizeExpr(expr);
+    if (!s) return 'Hint: enter a problem like 12 + 5 × 3 or (12 - 5) + 3.';
+    const hints = ['Combine × and ÷ first, then + and − left-to-right.'];
+    if (/(\()/.test(s)) hints.push('Work inside parentheses before anything else.');
+    if (/[*\/]/.test(s) && /[+\-]/.test(s)) hints.push('Rewrite × as * and ÷ as / if needed.');
+    return hints.join(' ');
   }
 
-  const answer = safeEval(expr);
-  steps.push(`Result: ${fmt(answer)}`);
-  return { steps, answer };
-};
-
-const hintsFor = (expr) => {
-  const base = [
-    "Underline what the question is asking.",
-    "Circle the numbers and operators you will use.",
-    "Compute parentheses first, then ×/÷, then +/− (left to right).",
-    "Estimate to sanity-check your final answer."
-  ];
-  if (/=/.test(expr) && /x/.test(expr)) base.unshift("Isolate x by undoing +/− first, then ×/÷.");
-  if (/\//.test(expr) || /÷/.test(expr)) base.push("Dividing by a number equals multiplying by its reciprocal.");
-  return base;
-};
-
-const buildVariants = (expr, n=6) => {
-  expr = normalize(expr);
-  const nums = [...expr.matchAll(/(-?\d+(?:\.\d+)?)/g)].map(m => ({v:m[0]}));
-  if (!nums.length) return [];
-  const out = [];
-  for (let i=0;i<n;i++){
-    let e = expr;
-    nums.forEach((num, idx) => {
-      const base = parseFloat(num.v);
-      const delta = (i%2===0?1:-1) * (1 + ((i+idx)%3));
-      e = e.replace(num.v, fmt(base + delta));
-    });
-    let ans = null, lin=null;
-    if (/=/.test(e) && /x/.test(e)) { lin = solveLinear(e); ans = lin? lin.x : null; }
-    else { try { ans = safeEval(sanitize(e)); } catch { ans = null; } }
-    out.push({expr:e, answer: ans});
+  function checkAnswer(expr='', answer='') {
+    const expected = evalSafe(expr);
+    if (!Number.isFinite(expected)) return { ok:false, verdict: 'Could not evaluate the problem.' };
+    const a = parseFloat(String(answer).trim());
+    if (!Number.isFinite(a)) return { ok:false, verdict: 'Please enter a numeric answer.' };
+    const ok = Math.abs(a - expected) < 1e-9;
+    return { ok, verdict: ok ? 'Correct ✔' : `Not equal: expected ${expected}, you entered ${a}` };
   }
-  return out;
-};
 
-const printable = (title, baseExpr, vars) => {
-  const w = window.open('', '_blank');
-  const items = vars.map((v,i)=>`<li><b>Problem ${i+1}:</b> ${v.expr}</li>`).join('');
-  const answers = vars.map((v,i)=>`<li>Problem ${i+1}: <b>${v.answer ?? '—'}</b></li>`).join('');
-  const css = "body{font:16px/1.45 ui-sans-serif,system-ui,Segoe UI,Roboto} .sheet{max-width:760px;margin:24px auto;padding:24px;border:1px solid #ddd;border-radius:12px}";
-  w.document.write(`<!doctype html><meta charset="utf-8"><title>${title}</title><style>${css}</style><div class="sheet"><h1>${title}</h1><p>Base: ${baseExpr}</p><ol>${items}</ol><hr><h2>Answer Key</h2><ol>${answers}</ol></div>`);
-  w.document.close();
-};
+  // Namespace export
+  g.W2Q = g.W2Q || {};
+  g.W2Q.normalizeExpr = normalizeExpr;
+  g.W2Q.evalSafe      = evalSafe;
+  g.W2Q.generateSteps = generateSteps;
+  g.W2Q.genHint       = genHint;
+  g.W2Q.checkAnswer   = checkAnswer;
 
-// ---- wire UI ----
-$("#btnSteps").addEventListener("click", () => {
-  const p = $("#problem").value.trim();
-  if (!p) return;
-  try {
-    const {steps} = stepsFor(p);
-    const ol = $("#stepsOut"); ol.innerHTML = "";
-    steps.forEach(s => { const li = document.createElement("li"); li.textContent = s; ol.appendChild(li); });
-  } catch {
-    $("#stepsOut").innerHTML = "<li>Could not parse. Try a simpler expression.</li>";
-  }
-});
-
-$("#btnHint").addEventListener("click", () => {
-  const p = $("#problem").value.trim();
-  const ul = $("#hintsOut"); ul.innerHTML = "";
-  hintsFor(p).forEach(h => { const li = document.createElement("li"); li.textContent = h; ul.appendChild(li); });
-});
-
-$("#btnCheck").addEventListener("click", () => {
-  const p = $("#problem").value.trim();
-  const a = parseFloat($("#answer").value.trim());
-  const box = $("#result");
-  let expected = null;
-  try {
-    const lin = solveLinear(p);
-    expected = lin ? lin.x : safeEval(sanitize(p));
-  } catch {}
-  if (expected == null || Number.isNaN(a)) {
-    box.textContent = "Unable to check. Make sure the input and your answer are numeric / linear in x.";
-    return;
-  }
-  box.textContent = Math.abs(a - expected) <= 1e-6
-    ? `✅ Correct! Answer = ${fmt(expected)}`
-    : `✗ Not quite. Expected ${fmt(expected)} (you entered ${$("#answer").value}).`;
-});
-
-$("#btnVariants").addEventListener("click", () => {
-  const p = $("#problem").value.trim();
-  if (!p) return;
-  const vars = buildVariants(p, 6);
-  if (!vars.length) return;
-  printable("Math Wars Meta — Teacher Pack", p, vars);
-});
-
-// Prefill for a fun first run
-$("#problem").value = "12 + 5 × 3";
-
-// Receive selection from background → sidepanel
-window.addEventListener("message", (e) => {
-  if (!e.data || e.data.type !== "W2Q_SELECTION") return;
-  const t = (e.data.text || "").trim();
-  if (t) $("#problem").value = t;
-});
-
-
-
-
+})(globalThis);
