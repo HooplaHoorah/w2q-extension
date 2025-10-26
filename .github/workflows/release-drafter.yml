@@ -3,17 +3,12 @@ permissions:
   contents: write
   pull-requests: read
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    types: [opened, reopened, synchronize, ready_for_review, closed]
-concurrency:
-  group: release-drafter
-  cancel-in-progress: true
+  push:        { branches: [ main ] }
+  pull_request:{ types: [opened, reopened, synchronize, ready_for_review, closed] }
 jobs:
-  update_release_draft:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: release-drafter/release-drafter@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
+        with: { config-name: release-drafter.yml }
