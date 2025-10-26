@@ -1,0 +1,19 @@
+name: attach-zip-on-release
+permissions:
+  contents: write
+on:
+  release:
+    types: [published]
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pack extension
+        run: |
+          cd extension
+          zip -r ../web-to-quest-extension.zip .
+      - name: Upload asset to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: web-to-quest-extension.zip
