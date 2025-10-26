@@ -6,10 +6,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    types: [opened, reopened, synchronize, ready_for_review, closed]
-concurrency:
-  group: release-drafter
-  cancel-in-progress: true
+    types: [opened, reopened, synchronize, closed]
 jobs:
   update_release_draft:
     runs-on: ubuntu-latest
