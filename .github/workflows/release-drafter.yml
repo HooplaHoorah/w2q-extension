@@ -1,4 +1,7 @@
 name: Release Drafter
+permissions:
+  contents: write
+  pull-requests: read
 on:
   push:
     branches: [ main ]
