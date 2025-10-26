@@ -1,0 +1,17 @@
+{
+  "name": "cloud",
+  "version": "1.0.0",
+  "description": "Hybrid Google AI backend for Web-to-Quest extension",
+  "type": "module",
+  "private": true,
+  "main": "index.js",
+  "scripts": { "start": "node index.js", "dev": "node index.js" },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "zod": "^4.1.12"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}
