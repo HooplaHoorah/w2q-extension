@@ -39,3 +39,21 @@ Turn on-page math into a guided quest: **Steps**, **Hints**, and **Answer Check*
 
 ## License
 MIT © 2025 Hoopla Hoorah, LLC
+
+
+
+## Privacy
+
+- All computation runs locally in the extension’s side panel.
+- We do not collect, transmit, or store personal data or analytics.
+- Selection text is cached briefly in chrome.storage.session (with chrome.storage.local as a fallback) only to pass data from the background script to the side panel, then overwritten on the next selection.
+- AI features are **optional** (off by default). When enabled, they use Chrome’s built-in on-device **Gemini Nano** (Prompt API). If Nano isn’t available, these buttons remain disabled. No third-party scripts or network calls are made by the extension.
+
+## Permissions used
+
+- \sidePanel\ — open the Web-to-Quest side panel  
+- \contextMenus\ — add “Send selection → Web-to-Quest”  
+- \storage\ — pass selection text from the background script to the side panel
+
+*No \host_permissions\ are requested.*
+
