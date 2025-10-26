@@ -1,3 +1,7 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/HooplaHoorah/w2q-extension)](https://github.com/HooplaHoorah/w2q-extension/releases)
+[![Pre-release](https://img.shields.io/github/v/release/HooplaHoorah/w2q-extension?include_prereleases&label=pre-release)](https://github.com/HooplaHoorah/w2q-extension/releases)
+
 # Web-to-Quest (Chrome MV3)
 
 Turn on-page math into a guided quest: **Steps**, **Hints**, and **Answer Check** — with an auto-expanding Steps view.
@@ -19,6 +23,9 @@ Turn on-page math into a guided quest: **Steps**, **Hints**, and **Answer Check*
 1. Open `chrome://extensions` and enable *Developer mode*.
 2. Click **Load unpacked** and select the `/extension` folder.
 3. Try it on any page.
+- [v0.1.0 (stable)](https://github.com/HooplaHoorah/w2q-extension/releases/tag/v0.1.0) – initial MVP (local steps/hints/check)
+- [v0.2.0-alpha (pre-release)](https://github.com/HooplaHoorah/w2q-extension/releases/tag/v0.2.0-alpha) – AI scaffolding (Prompt API stubs)
+
 
 ## Tech
 - Chrome **Manifest V3**, Side Panel UI
