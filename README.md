@@ -27,6 +27,23 @@ Turn on-page math into a guided quest: **Steps**, **Hints**, and **Answer Check*
 - [v0.2.0-alpha (pre-release)](https://github.com/HooplaHoorah/w2q-extension/releases/tag/v0.2.0-alpha) – AI scaffolding (Prompt API stubs)
 
 
+## Built‑in AI (Gemini Nano) — optional but supported
+
+Web‑to‑Quest works 100% without AI — all math steps, hints and answer checks are computed locally. If Chrome’s on‑device **Gemini Nano** (Prompt API) is exposed, two extra buttons will appear: *Explain this step (AI)* and *Generate printable variants (AI)*.
+
+To enable these features:
+- Follow the steps in [`extension/help/ai.html`](extension/help/ai.html) to install Chrome Canary and enable the Prompt API flags.
+- After loading the extension, open the side panel and run `await window.ai.canCreateTextSession()` in the devtools console. The returned status may be:
+  - `ready` – AI is available and buttons are enabled automatically.
+  - `after-download` – the model is downloading; leave Chrome open on Wi‑Fi.
+  - `missing` or `unavailable` – this build/profile doesn’t yet expose the API (everything else still works).
+
+### Troubleshooting
+- **AI: unavailable** – You can still make tasks and check answers; only the two AI buttons are disabled.
+- If using Canary, confirm the flags are **Enabled** then reload the extension and probe again.
+- Advanced: launching Chrome with `--enable-features=PromptApiGeminiNano,PromptApiGeminiNanoMultimodalInput` may help when the flags UI is flaky.
+
+
 ## Tech
 - Chrome **Manifest V3**, Side Panel UI
 - **CSP-safe** arithmetic engine (shunting-yard; no `eval`)

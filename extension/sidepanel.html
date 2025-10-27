@@ -21,6 +21,12 @@
   </head>
   <body>
 
+    <!-- AI status row: shows current AI availability and provides a help link -->
+    <div id="aiStatusRow" style="display:flex;gap:12px;align-items:center;margin:.5rem 0;">
+      <span id="status" class="muted">AI: checking…</span>
+      <a id="aiHelp" class="muted" href="./help/ai.html" target="_blank">Help → How to enable AI</a>
+    </div>
+
     <div class="info" id="howto" style="border:1px solid #e0e0e0;background:#fafafa;padding:10px;border-radius:8px;margin-bottom:12px;">
       <strong>How to use</strong>
       <ol style="margin:8px 0 0 18px;padding:0;">
@@ -36,7 +42,7 @@
       <strong>Settings</strong>
       <div style="margin-top:6px; display:flex; align-items:center; gap:10px;">
         <label><input type="checkbox" id="aiToggle"> Enable AI features (Gemini Nano, if available)</label>
-        <span id="aiStatus" class="muted">AI: checking…</span>
+        <!-- The AI status is now displayed in its own row; this span is removed. -->
       </div>
     </div>
 
@@ -45,14 +51,14 @@
     <div class="row">
       <button data-btn="steps" id="btnSteps">Generate steps</button>
       <button data-btn="hint" id="btnHint">Hint me</button>
-      <button data-btn="explain" id="btnExplain" disabled title="Enable AI in Settings">Explain this step (AI)</button>
+      <button data-btn="explain" id="btnExplain" data-ai-only disabled title="Enable AI in Settings">Explain this step (AI)</button>
     </div>
 
     <h3 id="answer-label">Answer</h3>
     <input id="answer" name="answer" type="text" autocomplete="off" placeholder="Type your answer…" />
     <div>
       <button data-btn="check" id="btnCheck">Check answer</button>
-      <button data-btn="variants" id="btnVariants" disabled title="Enable AI in Settings">Generate printable variants (AI)</button>
+      <button data-btn="variants" id="btnVariants" data-ai-only disabled title="Enable AI in Settings">Generate printable variants (AI)</button>
     </div>
 
     <h3>Outputs</h3>

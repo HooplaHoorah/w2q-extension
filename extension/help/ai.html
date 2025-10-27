@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Enable on-device AI (optional)</title>
+  <style>
+    body, code, pre { font: 14px system-ui, sans-serif; }
+    body { margin: 24px; max-width: 920px; }
+    code, pre { background:#fff7e8; padding:12px; border-radius:4px; }
+    .muted { color:#7a7a7a; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h2>Enable on-device AI (Gemini Nano) — optional</h2>
+  <p>Web‑to‑Quest fully works without AI. These steps only enable the extra features that light up the
+     <em>Explain this step (AI)</em> and <em>Generate printable variants (AI)</em> buttons.</p>
+
+  <ol>
+    <li><b>Install Chrome Canary</b> (64‑bit)</li>
+    <li><b>Create a fresh profile</b> (don’t sign in yet)</li>
+    <li>Enable the flags and relaunch Chrome:<br/>
+      <code>#prompt-api-for-gemini-nano</code><br/>
+      <code>#prompt-api-for-gemini-nano-multimodal-input</code> (optional)<br/>
+      <code>#optimization-guide-on-device-model</code> (if available)<br/>
+      <code>#enable-experimental-web-platform-features</code> (some builds need this)</li>
+    <li>Load the extension, open the side panel, then from the panel console run:<br/>
+      <code>await window.ai.canCreateTextSession()</code></li>
+  </ol>
+
+  <p class="muted">If you see <code>"ready"</code> — all AI buttons enable automatically. If you see <code>"after-download"</code>, leave Chrome open on Wi‑Fi.
+     If it says <code>"missing"</code> on this profile/build, the API isn’t exposed yet (that’s ok — everything still works without AI).</p>
+</body>
+</html>

@@ -1,3 +1,31 @@
+// --- AI availability probe & graceful fallback ---
+const statusEl = document.getElementById('status');
+
+function getAI() {
+  // Prompt API appears on extension pages after flags + relaunch.
+  return (globalThis?.ai || (globalThis?.window && window.ai)) || null;
+}
+
+function hideAIButtons() {
+  document.querySelectorAll('[data-ai-only]').forEach(el => el.setAttribute('disabled', 'disabled'));
+}
+
+(async () => {
+  const ai = getAI();
+  if (!ai) { statusEl.textContent = 'AI: unavailable'; hideAIButtons(); return; }
+
+  const s = await ai.canCreateTextSession();
+  if (s === 'ready') {
+    statusEl.textContent = 'AI: ready';
+  } else if (s === 'after-download') {
+    statusEl.textContent = 'AI: downloading…';
+    hideAIButtons();
+  } else {
+    statusEl.textContent = 'AI: unavailable';
+    hideAIButtons();
+  }
+})();
+
 // --- sidepanel.js (v3.3) ---
 const KEY = 'W2Q_SELECTION';
 const storeSess = chrome.storage?.session;
