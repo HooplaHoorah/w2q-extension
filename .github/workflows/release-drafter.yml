@@ -1,14 +1,23 @@
 name: Release Drafter
+
 permissions:
   contents: write
   pull-requests: read
+
 on:
-  push:        { branches: [ main ] }
-  pull_request:{ types: [opened, reopened, synchronize, ready_for_review, closed] }
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+  workflow_dispatch: {}   # allow manual runs from Actions tab
+
 jobs:
-  release:
+  update_release_draft:
+    # Skip only when a PR is closed without merge; run on push/main, open PRs, and merged PRs
+    if: github.event_name != 'pull_request' || github.event.action != 'closed' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: release-drafter/release-drafter@v6
-        env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
-        with: { config-name: release-drafter.yml }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
