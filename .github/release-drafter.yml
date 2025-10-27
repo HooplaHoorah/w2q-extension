@@ -1,13 +1,27 @@
 name-template: 'v$NEXT_PATCH_VERSION'
 tag-template: 'v$NEXT_PATCH_VERSION'
+
 categories:
-  - title: 🚀 Features
-    labels: ['enhancement', 'AI']
-  - title: 🐞 Fixes
-    labels: ['bug']
-  - title: 🛣️ Chores
-    labels: ['chore', 'docs', 'design']
-change-template: '- $TITLE (#$NUMBER)'
+  - title: 'Features'
+    labels: ['feature', 'enhancement']
+  - title: 'Fixes'
+    labels: ['bug', 'fix']
+  - title: 'Docs'
+    labels: ['documentation']
+  - title: 'CI'
+    labels: ['ci']
+
+change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
+
+version-resolver:
+  major:
+    labels: ['major']
+  minor:
+    labels: ['minor', 'feature', 'enhancement']
+  patch:
+    labels: ['patch', 'bug', 'fix', 'documentation', 'ci']
+  default: patch
+
 template: |
   ## Changes
   $CHANGES
