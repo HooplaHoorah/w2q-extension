@@ -67,7 +67,8 @@
       </div>
     </div>
 
-    <h3>Problem</h3>
+    <section class="for-math">
+<h3>Problem</h3>
     <textarea id="problem" name="problem" placeholder="Select text, then right-click → Send selection → Web-to-Quest."></textarea>
     <div class="row">
       <button data-btn="steps" id="btnSteps">Generate steps</button>
@@ -90,7 +91,14 @@
     <div class="muted">Check Answer</div>
     <div class="out" id="outAnswer"></div>
 
-    <script src="prototype.js" defer></script>
+    </section>
+<section class="for-general">
+  <div class="info" id="generalIntro" style="border:1px solid #e0e0e0;background:#f9fbff;padding:10px;border-radius:8px;margin-bottom:12px;">
+    <strong>General mode</strong>
+    <div class="muted">Select text on any page, then open the side panel to <strong>Summarize</strong>, <strong>Rewrite/Proofread</strong>, <strong>Translate</strong>, or <strong>Extract</strong> answers/highlights.</div>
+  </div>
+</section>
+<script src="prototype.js" defer></script>
     <script src="ai-stubs.js" defer></script>
     <script src="sidepanel.js" defer></script>
   </body>
