@@ -3,6 +3,8 @@
 [![Pre-release](https://img.shields.io/github/v/release/HooplaHoorah/w2q-extension?include_prereleases&label=pre-release)](https://github.com/HooplaHoorah/w2q-extension/releases)
 
 # Web-to-Quest (Chrome MV3)
+![Release Drafter](https://github.com/HooplaHoorah/w2q-extension/actions/workflows/release-drafter.yml/badge.svg)
+
 
 Turn on-page math into a guided quest: **Steps**, **Hints**, and **Answer Check** — with an auto-expanding Steps view.
 
