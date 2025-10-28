@@ -17,6 +17,16 @@
       .linkbtn { border: none; background: none; color: #0b57d0; padding: 0; cursor: pointer; font: inherit; }
       .linkbtn:hover { text-decoration: underline; }
       .muted { color: #666; }
+
+      .mode-toggle { display: flex; gap: 8px; margin: 8px 0 12px; }
+      .mode-btn { padding: 6px 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
+      .mode-btn[aria-selected="true"] { border-color: #4285f4; box-shadow: 0 0 0 2px rgba(66,133,244,.15); }
+
+      /* Show/Hide sections by mode (wrapping comes in Step 4) */
+      .for-general, .for-math { display: none; }
+      body[data-mode="general"] .for-general { display: block; }
+      body[data-mode="math"]    .for-math    { display: block; }
+
     </style>
   </head>
   <body>
