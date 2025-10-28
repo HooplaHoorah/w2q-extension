@@ -93,10 +93,61 @@
 
     </section>
 <section class="for-general">
-  <div class="info" id="generalIntro" style="border:1px solid #e0e0e0;background:#f9fbff;padding:10px;border-radius:8px;margin-bottom:12px;">
-    <strong>General mode</strong>
-    <div class="muted">Select text on any page, then open the side panel to <strong>Summarize</strong>, <strong>Rewrite/Proofread</strong>, <strong>Translate</strong>, or <strong>Extract</strong> answers/highlights.</div>
+    <div class="info">
+    <strong>General tools</strong>
+    <p class="muted" style="margin:8px 0 0;">
+      Paste or send selected text via context menu. Then choose an action.
+    </p>
   </div>
+
+  <label for="genInput"><strong>Input</strong></label>
+  <textarea id="genInput"
+            placeholder="Select text, then right-click → Send selection → Web-to-Quest (or paste here)."
+            style="min-height:120px;"></textarea>
+
+  <div class="row" style="gap:8px;align-items:center;margin:8px 0;">
+    <button id="genSummarize" class="out">Summarize</button>
+
+    <button id="genRewrite" class="out">Rewrite</button>
+    <select id="genTone" title="Rewrite tone">
+      <option value="friendly" selected>Friendly</option>
+      <option value="concise">Concise</option>
+      <option value="formal">Formal</option>
+      <option value="simplify">Simplify</option>
+    </select>
+  </div>
+
+  <div class="row" style="gap:8px;align-items:center;margin:8px 0;">
+    <button id="genTranslate" class="out">Translate</button>
+    <select id="genLang" title="Target language">
+      <option value="en">English</option>
+      <option value="es" selected>Spanish</option>
+      <option value="fr">French</option>
+      <option value="de">German</option>
+      <option value="pt">Portuguese</option>
+      <option value="it">Italian</option>
+      <option value="ja">Japanese</option>
+      <option value="ko">Korean</option>
+      <option value="zh">Chinese</option>
+    </select>
+  </div>
+
+  <div class="row" style="gap:8px;align-items:center;margin:8px 0;">
+    <button id="genExtract" class="out">Extract</button>
+    <select id="genExtractType" title="What to extract">
+      <option value="highlights" selected>Highlights</option>
+      <option value="key_points">Key points</option>
+      <option value="dates">Dates</option>
+      <option value="people">People</option>
+      <option value="tasks">Tasks / To-dos</option>
+    </select>
+  </div>
+
+  <div class="info">
+    <strong>Result</strong>
+    <div id="genOut" class="out" style="min-height:140px;"></div>
+  </div>
+
 </section>
 <script src="prototype.js" defer></script>
     <script src="ai-stubs.js" defer></script>
