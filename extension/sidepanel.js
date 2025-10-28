@@ -102,6 +102,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnExplain = document.querySelector('#btnExplain');
   const btnVariants = document.querySelector('#btnVariants');
 
+  await initMode();
+
   async function refreshAI() {
     if (!window.W2Q || !window.W2Q.generateSteps) {
       // W2Q not ready yet; no-op
@@ -168,6 +170,35 @@ document.addEventListener('DOMContentLoaded', async () => {
   await prefillFromStorage();
   refreshAI();
 });
+
+// --- Mode toggle wiring ---
+const MODE_KEY = 'w2q_mode';
+
+function setMode(mode, { persist = true } = {}) {
+  const generalBtn = document.getElementById('mode-general');
+  const mathBtn    = document.getElementById('mode-math');
+  if (generalBtn) generalBtn.setAttribute('aria-selected', String(mode === 'general'));
+  if (mathBtn)    mathBtn.setAttribute('aria-selected', String(mode === 'math'));
+  document.body.dataset.mode = mode;
+  if (persist && chrome?.storage?.sync) {
+    try { chrome.storage.sync.set({ [MODE_KEY]: mode }); } catch {}
+  }
+}
+
+async function initMode() {
+  try {
+    const saved = chrome?.storage?.sync ? await chrome.storage.sync.get(MODE_KEY) : {};
+    setMode(saved[MODE_KEY] || 'general', { persist: false });
+  } catch {
+    setMode('general', { persist: false });
+  }
+  document.getElementById('mode-general')?.addEventListener('click', () => setMode('general'));
+  document.getElementById('mode-math')?.addEventListener('click', () => setMode('math'));
+  document.querySelector('.mode-toggle')?.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') setMode('math');
+    if (e.key === 'ArrowLeft')  setMode('general');
+  });
+}
 
 // Listen for changes in whichever storage bucket we used
 (chrome.storage?.session || chrome.storage).onChanged.addListener((changes, area) => {
