@@ -1,5 +1,4 @@
-// --- AI availability probe & graceful fallback ---
-// --- AI availability probe & graceful fallback ---
+/ --- AI availability probe & graceful fallback ---
 function getAI() {
   return (globalThis?.ai || (globalThis?.window && window.ai)) || null;
 }
