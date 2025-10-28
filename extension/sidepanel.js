@@ -1,30 +1,41 @@
 // --- AI availability probe & graceful fallback ---
-const statusEl = document.getElementById('status');
-
 function getAI() {
-  // Prompt API appears on extension pages after flags + relaunch.
   return (globalThis?.ai || (globalThis?.window && window.ai)) || null;
 }
-
-function hideAIButtons() {
+function statusEl() {
+  return document.getElementById('aiStatus');
+}
+function disableAIButtons() {
   document.querySelectorAll('[data-ai-only]').forEach(el => el.setAttribute('disabled', 'disabled'));
 }
 
-(async () => {
+async function refreshAI() {
+  const el = statusEl();
+  if (!el) return; // DOM not ready or row missing
   const ai = getAI();
-  if (!ai) { statusEl.textContent = 'AI: unavailable'; hideAIButtons(); return; }
+  if (!ai) { el.textContent = 'AI: unavailable'; disableAIButtons(); return; }
 
-  const s = await ai.canCreateTextSession();
-  if (s === 'ready') {
-    statusEl.textContent = 'AI: ready';
-  } else if (s === 'after-download') {
-    statusEl.textContent = 'AI: downloading…';
-    hideAIButtons();
-  } else {
-    statusEl.textContent = 'AI: unavailable';
-    hideAIButtons();
+  try {
+    const s = await ai.canCreateTextSession();
+    if (s === 'ready') {
+      el.textContent = 'AI: ready';
+    } else if (s === 'after-download') {
+      el.textContent = 'AI: downloading…';
+      disableAIButtons();
+    } else {
+      el.textContent = 'AI: unavailable';
+      disableAIButtons();
+    }
+  } catch (err) {
+    console.warn('AI probe failed', err);
+    const el2 = statusEl();
+    if (el2) el2.textContent = 'AI: unavailable';
+    disableAIButtons();
   }
-})();
+}
+
+// Run after DOM is ready (works with or without <script defer>)
+document.addEventListener('DOMContentLoaded', refreshAI);
 
 // --- sidepanel.js (v3.3) ---
 const KEY = 'W2Q_SELECTION';
