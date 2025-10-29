@@ -15,8 +15,13 @@ async function refreshAI() {
   const ai = getAI();
   if (!ai) { el.textContent = 'AI: unavailable'; disableAIButtons(); return; }
 
+  let on = false; // set after probing AI so we can gate buttons below
+
+
   try {
     const s = await ai.canCreateTextSession();
+    on = (s === 'ready');
+
     if (s === 'ready') {
       el.textContent = 'AI: ready';
     } else if (s === 'after-download') {
@@ -32,6 +37,12 @@ async function refreshAI() {
     if (el2) el2.textContent = 'AI: unavailable';
     disableAIButtons();
   }
+  // General buttons gate with AI availability (like Math)
+  if (btnGenSummarize) { btnGenSummarize.disabled = !on; btnGenSummarize.title = on ? '' : 'Enable AI in Settings'; }
+  if (btnGenRewrite)   { btnGenRewrite.disabled   = !on; btnGenRewrite.title   = on ? '' : 'Enable AI in Settings'; }
+  if (btnGenTranslate) { btnGenTranslate.disabled = !on; btnGenTranslate.title = on ? '' : 'Enable AI in Settings'; }
+  if (btnGenExtract)   { btnGenExtract.disabled   = !on; btnGenExtract.title   = on ? '' : 'Enable AI in Settings'; }
+
 }
 
 // Run after DOM is ready (works with or without <script defer>)
@@ -204,3 +215,70 @@ async function initMode() {
 (chrome.storage?.session || chrome.storage).onChanged.addListener((changes, area) => {
   if (changes[KEY]?.newValue) setProblem(changes[KEY].newValue);
 });
+
+// ----------------------------------------------
+// W2Q: General Mode (append-only) — safe to paste
+// at the END of extension/sidepanel.js
+// ----------------------------------------------
+
+// DOM refs (will be null if General section not present)
+const genInput        = document.querySelector('#genInput');
+const btnGenSummarize = document.querySelector('#genSummarize');
+const btnGenRewrite   = document.querySelector('#genRewrite');
+const selGenTone      = document.querySelector('#genTone');
+const btnGenTranslate = document.querySelector('#genTranslate');
+const selGenLang      = document.querySelector('#genLang');
+const btnGenExtract   = document.querySelector('#genExtract');
+const selGenExtract   = document.querySelector('#genExtractType');
+const genOut          = document.querySelector('#genOut');
+
+function getGeneralInput() { return (genInput?.value || '').trim(); }
+function setGenOut(text)   { if (genOut) genOut.textContent = text ?? ''; }
+
+// Flexible call surface for built-in AI or stubs
+async function callGeneral(apiName, payload) {
+  if (window.W2Q_AI?.[apiName]) return await window.W2Q_AI[apiName](payload);
+  if (window.W2Q_AI?.general)   return await window.W2Q_AI.general(apiName, payload);
+  if (window.W2Q_AI?.prompt)    return await window.W2Q_AI.prompt(JSON.stringify({ action: apiName, ...payload }));
+  throw new Error('General AI not available in this build.');
+}
+
+// Button listeners (no-ops if buttons not present)
+btnGenSummarize?.addEventListener('click', async () => {
+  const text = getGeneralInput(); if (!text) return setGenOut('Paste or send some text first.');
+  setGenOut('Summarizing...');
+  try { setGenOut(String(await callGeneral('summarize', { text }) || '')); }
+  catch (e) { setGenOut('Error: ' + (e?.message || e)); }
+});
+
+btnGenRewrite?.addEventListener('click', async () => {
+  const text = getGeneralInput(); if (!text) return setGenOut('Paste or send some text first.');
+  const tone = selGenTone?.value || 'friendly';
+  setGenOut('Rewriting...');
+  try { setGenOut(String(await callGeneral('rewrite', { text, tone }) || '')); }
+  catch (e) { setGenOut('Error: ' + (e?.message || e)); }
+});
+
+btnGenTranslate?.addEventListener('click', async () => {
+  const text = getGeneralInput(); if (!text) return setGenOut('Paste or send some text first.');
+  const target = selGenLang?.value || 'es';
+  setGenOut('Translating...');
+  try { setGenOut(String(await callGeneral('translate', { text, target }) || '')); }
+  catch (e) { setGenOut('Error: ' + (e?.message || e)); }
+});
+
+btnGenExtract?.addEventListener('click', async () => {
+  const text = getGeneralInput(); if (!text) return setGenOut('Paste or send some text first.');
+  const kind = selGenExtract?.value || 'highlights';
+  setGenOut('Extracting...');
+  try { setGenOut(String(await callGeneral('extract', { text, kind }) || '')); }
+  catch (e) { setGenOut('Error: ' + (e?.message || e)); }
+});
+
+// Optional: prefill General from Math's problem if available and empty
+try {
+  if (genInput && !genInput.value && typeof getProblem === 'function') {
+    const p = getProblem();
+    if (p) genInput.value = p;
+  }
+} catch {}
