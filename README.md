@@ -1,78 +1,149 @@
+# Web-to-Quest (Chrome MV3)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/HooplaHoorah/w2q-extension)](https://github.com/HooplaHoorah/w2q-extension/releases)
-[![Pre-release](https://img.shields.io/github/v/release/HooplaHoorah/w2q-extension?include_prereleases&label=pre-release)](https://github.com/HooplaHoorah/w2q-extension/releases)
-
-# Web-to-Quest (Chrome MV3)
 ![Release Drafter](https://github.com/HooplaHoorah/w2q-extension/actions/workflows/release-drafter.yml/badge.svg)
 
+Turn on-page text into a guided quest.  
+- **Math tab:** steps, hints, and answer check (all local).  
+- **General tab:** translate / extract everywhere; summarize / rewrite when on-device AI is available.
 
-Turn on-page math into a guided quest: **Steps**, **Hints**, and **Answer Check** — with an auto-expanding Steps view.
+---
+
+## Demo (2 minutes)
+
+▶️ https://youtu.be/UONUOS2RKOU
+
+---
+
+## Screenshots
+
+> If your filenames differ, adjust the image paths below. Put PNGs in `demo/screenshots/`.
+
+<p align="center">
+  <img src="demo/screenshots/01-context-menu.png" width="45%" alt="Context menu">
+  <img src="demo/screenshots/02-general-input.png" width="45%" alt="General: Input"><br/>
+  <img src="demo/screenshots/03-translate.png" width="45%" alt="General: Translate">
+  <img src="demo/screenshots/04-extract.png" width="45%" alt="General: Extract"><br/>
+  <img src="demo/screenshots/05-math.png" width="45%" alt="Math tab">
+  <img src="demo/screenshots/06-theme.png" width="45%" alt="Theme toggle"><br/>
+  <img src="demo/screenshots/07-optional-gemini-nano.png" width="45%" alt="Optional Gemini Nano">
+  <img src="demo/screenshots/08-generate-steps.png" width="45%" alt="Generate steps"><br/>
+  <img src="demo/screenshots/09-hint-me.png" width="45%" alt="Hint me">
+  <img src="demo/screenshots/10-check-answer.png" width="45%" alt="Check answer"><br/>
+  <img src="demo/screenshots/11-generate-printable-variants.png" width="45%" alt="Printable variants">
+</p>
+
+---
+
+## What’s included
+
+- **Side Panel UI** (with popup fallback)  
+- **Math assistant**:  
+  - *Generate steps* (auto-expanding list)  
+  - *Hint me*  
+  - *Check answer* (result appears only in the Check box)  
+- **General tools**:  
+  - *Translate* (no network, works everywhere)  
+  - *Extract highlights* (no network, works everywhere)  
+  - *Summarize* / *Rewrite* (require on-device AI if available)  
+- **Theme**: Light / Dark / System  
+- **Privacy-first**: no data leaves the device; AI is opt-in
+
+---
+
+## Quick start (Developer mode)
+
+1) Open `chrome://extensions` → enable **Developer mode**.  
+2) Click **Load unpacked** → select the `extension/` folder.  
+3) Highlight text on any page → Right-click → **Send selection → Web-to-Quest**.  
+4) The side panel (or popup fallback) opens with your selection prefilled.
+
+---
 
 ## How to use
-1. Select a math expression on any page.
-2. Right-click → *Send selection → Web-to-Quest* (or paste into **Problem**).
-3. Click **Generate steps** and/or **Hint me** for guidance.
-4. Type your answer, then click **Check answer** — the correct result is **only** shown here.
 
-## New (v0.2.0-skeleton)
-- **Settings → Enable AI features** (off by default). When enabled and available:
-  - **Explain this step (AI):** asks Gemini Nano (Prompt API) for a one-line rationale.
-  - **Generate printable variants (AI):** drafts a list of similar problems (no answers).
+### General tab
+1. Paste or send text into **Input**.  
+2. Choose one action:  
+   - **Translate** *(works offline)*  
+   - **Extract** *(works offline)*  
+   - **Summarize** / **Rewrite** *(AI-gated; see below)*  
+3. Results appear in **Result**.
 
-> These AI features are scaffolded and gracefully degrade when Nano isn’t available.
+### Math tab
+1. Paste or send the math expression into **Problem**.  
+2. Click **Generate steps** and / or **Hint me**.  
+3. Enter your answer → **Check answer** (only here is the correct value shown).  
+4. **Generate printable variants** drafts similar problems (no answers).
 
-## Install (Developer mode)
-1. Open `chrome://extensions` and enable *Developer mode*.
-2. Click **Load unpacked** and select the `/extension` folder.
-3. Try it on any page.
-- [v0.1.0 (stable)](https://github.com/HooplaHoorah/w2q-extension/releases/tag/v0.1.0) – initial MVP (local steps/hints/check)
-- [v0.2.0-alpha (pre-release)](https://github.com/HooplaHoorah/w2q-extension/releases/tag/v0.2.0-alpha) – AI scaffolding (Prompt API stubs)
+---
 
+## Built-in AI (Gemini Nano) — optional
 
-## Built‑in AI (Gemini Nano) — optional but supported
+Web-to-Quest works 100% without AI: math steps / hints / checks, Translate, and Extract are fully local.  
+If Chrome exposes on-device **Gemini Nano** (Prompt API), **Summarize** and **Rewrite** enable automatically.
 
-Web‑to‑Quest works 100% without AI — all math steps, hints and answer checks are computed locally. If Chrome’s on‑device **Gemini Nano** (Prompt API) is exposed, two extra buttons will appear: *Explain this step (AI)* and *Generate printable variants (AI)*.
+Enable (if you want AI):
+- Use Chrome Canary and flags as described in `extension/help/ai.html`.  
+- Open the side panel DevTools and run:
+  ```js
+  await window.ai?.canCreateTextSession?.()
+  ```
+  You might see: `ready` (enabled), `after-download` (model fetching), or `missing/unavailable` (no AI).
 
-To enable these features:
-- Follow the steps in [`extension/help/ai.html`](extension/help/ai.html) to install Chrome Canary and enable the Prompt API flags.
-- After loading the extension, open the side panel and run `await window.ai.canCreateTextSession()` in the devtools console. The returned status may be:
-  - `ready` – AI is available and buttons are enabled automatically.
-  - `after-download` – the model is downloading; leave Chrome open on Wi‑Fi.
-  - `missing` or `unavailable` – this build/profile doesn’t yet expose the API (everything else still works).
+*(Graceful degradation: when AI isn’t available, those buttons stay disabled and everything else still works.)*
 
-### Troubleshooting
-- **AI: unavailable** – You can still make tasks and check answers; only the two AI buttons are disabled.
-- If using Canary, confirm the flags are **Enabled** then reload the extension and probe again.
-- Advanced: launching Chrome with `--enable-features=PromptApiGeminiNano,PromptApiGeminiNanoMultimodalInput` may help when the flags UI is flaky.
+---
 
+## Permissions
 
-## Tech
-- Chrome **Manifest V3**, Side Panel UI
-- **CSP-safe** arithmetic engine (shunting-yard; no `eval`)
-- Auto-expanding Steps with *Show all / Collapse*
-- Privacy-first: no data leaves device; AI features require explicit opt-in
+- `sidePanel` — open the Web-to-Quest panel  
+- `contextMenus` — add **Send selection → Web-to-Quest**  
+- `storage` — pass selection text from background to panel safely
 
-## Development
-- Source lives under `/extension`.
-- On tags matching `v*.*.*`, GitHub Actions zips the extension and uploads an artifact (see `.github/workflows/build.yml`).
+*No `host_permissions` are requested.*
 
-## License
-MIT © 2025 Hoopla Hoorah, LLC
-
-
+---
 
 ## Privacy
 
-- All computation runs locally in the extension’s side panel.
-- We do not collect, transmit, or store personal data or analytics.
-- Selection text is cached briefly in chrome.storage.session (with chrome.storage.local as a fallback) only to pass data from the background script to the side panel, then overwritten on the next selection.
-- AI features are **optional** (off by default). When enabled, they use Chrome’s built-in on-device **Gemini Nano** (Prompt API). If Nano isn’t available, these buttons remain disabled. No third-party scripts or network calls are made by the extension.
+- All computation runs locally in the extension’s process.  
+- We do **not** collect, transmit, or store personal data or analytics.  
+- Selection text is cached briefly in `chrome.storage.session` (with `chrome.storage.local` as a fallback) only to pass data from background → side panel, then overwritten on the next selection.  
+- AI features are **opt-in**; when enabled they use Chrome’s **on-device** Gemini Nano (no network calls).
 
-## Permissions used
+---
 
-- \sidePanel\ — open the Web-to-Quest side panel  
-- \contextMenus\ — add “Send selection → Web-to-Quest”  
-- \storage\ — pass selection text from the background script to the side panel
+## Development
 
-*No \host_permissions\ are requested.*
+- Source lives under `/extension`.  
+- On tags matching `v*.*.*`, GitHub Actions can package the build (see `.github/workflows/*`).  
+- Typical flow:
+  ```bash
+  # from repo root
+  npm run lint     # (if you add tooling)
+  # load /extension in chrome://extensions
+  ```
 
+---
+
+## Troubleshooting
+
+- **Panel didn’t appear** – It may open as a popup (fallback). You can also click the extension icon to open the panel.  
+- **“AI: unavailable”** – Summarize/Rewrite are disabled; the rest still works.  
+- **Context menu didn’t appear** – Reload the extension or right-click in a standard text selection area.
+
+---
+
+## Roadmap
+
+- Expand the printable-variants generator  
+- More extractors on the General tab  
+- Optional in-panel tutorial cards
+
+---
+
+## License
+
+MIT © 2025 Hoopla Hoorah, LLC

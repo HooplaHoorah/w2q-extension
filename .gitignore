@@ -2,3 +2,13 @@
 node_modules/
 dist/
 *.log
+# design source files
+*.psd
+# Local backups / artifacts
+extension_old/
+
+# Design sources not in repo
+*.psd
+
+# Any local automation notes
+*agent*instructions*.md

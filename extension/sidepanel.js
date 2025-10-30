@@ -1,206 +1,185 @@
-// --- AI availability probe & graceful fallback ---
-function getAI() {
-  return (globalThis?.ai || (globalThis?.window && window.ai)) || null;
-}
-function statusEl() {
-  return document.getElementById('aiStatus');
-}
-function disableAIButtons() {
-  document.querySelectorAll('[data-ai-only]').forEach(el => el.setAttribute('disabled', 'disabled'));
-}
+// sidepanel.js — Web-to-Quest (General + Math bridge + Theme)
 
-async function refreshAI() {
-  const el = statusEl();
-  if (!el) return; // DOM not ready or row missing
-  const ai = getAI();
-  if (!ai) { el.textContent = 'AI: unavailable'; disableAIButtons(); return; }
+document.addEventListener('DOMContentLoaded', () => {
+  // ---------- helpers ----------
+  const $ = (s) => document.querySelector(s);
+  const on = (el, ev, fn) => el && el.addEventListener(ev, fn);
 
-  try {
-    const s = await ai.canCreateTextSession();
-    if (s === 'ready') {
-      el.textContent = 'AI: ready';
-    } else if (s === 'after-download') {
-      el.textContent = 'AI: downloading…';
-      disableAIButtons();
-    } else {
-      el.textContent = 'AI: unavailable';
-      disableAIButtons();
-    }
-  } catch (err) {
-    console.warn('AI probe failed', err);
-    const el2 = statusEl();
-    if (el2) el2.textContent = 'AI: unavailable';
-    disableAIButtons();
+  const KEY_SELECTION = 'W2Q_SELECTION';
+  const KEY_THEME = 'W2Q_THEME';
+
+  // ---------- elements ----------
+  const tabs = {
+    general: $('#mode-general'),
+    math:    $('#mode-math'),
+  };
+  const ai = {
+    toggle:  $('#aiToggle'),
+    status:  $('#aiStatus'),
+  };
+  const gen = {
+    input:   $('#genInput'),
+    out:     $('#genOut'),
+    sum:     $('#genSummarize'),
+    rewr:    $('#genRewrite'),
+    tone:    $('#genTone'),
+    trans:   $('#genTranslate'),
+    lang:    $('#genLang'),
+    extr:    $('#genExtract'),
+    extrSel: $('#genExtractType'),
+  };
+  const mathFrame = $('#mathFrame');
+  const themeSel  = $('#themeSel');
+
+  // ---------- Math bridge ----------
+  function sendToMath(text) {
+    try { mathFrame?.contentWindow?.postMessage({ type: 'w2q:selection', text: text || '' }, '*'); } catch {}
   }
-}
-
-// Run after DOM is ready (works with or without <script defer>)
-document.addEventListener('DOMContentLoaded', refreshAI);
-
-// --- sidepanel.js (v3.3) ---
-const KEY = 'W2Q_SELECTION';
-const storeSess = chrome.storage?.session;
-const store = storeSess || chrome.storage.local;
-
-function $(sel){ return document.querySelector(sel); }
-const problemEl = () => $('#problem');
-const answerEl  = () => $('#answer');
-const stepsOut  = () => $('#outSteps');
-const hintsOut  = () => $('#outHints');
-const answerOut = () => $('#outAnswer');
-
-
-// --- expandable helper for Steps box ---
-function updateExpandable(el, toggle){
-  if (!el || !toggle) return;
-  // Measure content height
-  const needs = el.scrollHeight > 170; // threshold a bit bigger than max-height
-  toggle.hidden = !needs;
-  if (!needs){ el.dataset.expanded = 'false'; el.style.maxHeight = ''; return; }
-  if (el.dataset.expanded === 'true'){
-    el.style.maxHeight = el.scrollHeight + 'px';
-    toggle.textContent = 'Collapse';
-  } else {
-    el.style.maxHeight = '160px';
-    toggle.textContent = 'Show all';
+  function sendThemeToMath(theme) {
+    try { mathFrame?.contentWindow?.postMessage({ type: 'w2q:theme', theme }, '*'); } catch {}
   }
-}
-function setProblem(v=''){ const el=problemEl(); if(el) el.value=v; }
-function getProblem(){ return problemEl()?.value?.trim() || ''; }
-function getAnswer(){  return answerEl()?.value?.trim()  || ''; }
-
-async function prefillFromStorage(){
-  try{
-    const obj = await store.get(KEY);
-    if (obj && obj[KEY]){
-      setProblem(obj[KEY]);
-      await store.remove(KEY);
-    }
-  }catch(e){ console.warn('[W2Q] prefill failed', e); }
-}
-
-function wire(){
-  $('#btnSteps')?.addEventListener('click', ()=>{
-    try { stepsOut().textContent = ((window.W2Q||globalThis).generateSteps)(getProblem()); }
-    catch(e){ stepsOut().textContent = 'Error: '+ e.message; }
+  mathFrame?.addEventListener('load', () => {
+    sendToMath(gen.input?.value || '');
+    // push current theme to iframe on first load
+    const t = document.documentElement.getAttribute('data-theme') || 'light';
+    sendThemeToMath(t);
   });
-  $('#btnHint')?.addEventListener('click', ()=>{
-    try { hintsOut().textContent = ((window.W2Q||globalThis).genHint)(getProblem()); }
-    catch(e){ hintsOut().textContent = 'Error: '+ e.message; }
-  });
-  $('#btnCheck')?.addEventListener('click', ()=>{
-    try { const {verdict}=((window.W2Q||globalThis).checkAnswer)(getProblem(), getAnswer()); answerOut().textContent = verdict; }
-    catch(e){ answerOut().textContent = 'Error: '+ e.message; }
-  });
-}
 
-document.addEventListener('DOMContentLoaded', async () => {
-
-  // --- AI setup ---
-  const aiToggle = document.querySelector('#aiToggle');
-  const aiStatus = document.querySelector('#aiStatus');
-  const btnExplain = document.querySelector('#btnExplain');
-  const btnVariants = document.querySelector('#btnVariants');
-
-  await initMode();
-
-  async function refreshAI() {
-    if (!window.W2Q || !window.W2Q.generateSteps) {
-      // W2Q not ready yet; no-op
-      return;
-    }
-    const state = await W2Q_AI.checkAvailability();
-    aiStatus.textContent = state.available ? `AI: ${state.status}` : 'AI: unavailable';
-    const on = W2Q_AI.isEnabled() && state.available;
-    btnExplain.disabled = !on;
-    btnVariants.disabled = !on;
-    btnExplain.title = on ? '' : 'Enable AI in Settings';
-    btnVariants.title = on ? '' : 'Enable AI in Settings';
+  // ---------- tabs ----------
+  function setMode(mode) {
+    document.body.dataset.mode = mode;
+    tabs.general?.setAttribute('aria-selected', mode === 'general' ? 'true' : 'false');
+    tabs.math?.setAttribute('aria-selected',    mode === 'math'    ? 'true' : 'false');
+    if (mode === 'math') sendToMath(gen.input?.value || '');
   }
+  on(tabs.general, 'click', () => setMode('general'));
+  on(tabs.math,    'click', () => setMode('math'));
+  if (!document.body.dataset.mode) setMode('general');
 
-  aiToggle?.addEventListener('change', () => {
-    W2Q_AI.setEnabled(aiToggle.checked);
-    refreshAI();
-  });
+  // ---------- AI gate ----------
+  const aiEnabled = () => !!ai.toggle?.checked;
+  function updateAiStatus() {
+    if (ai.status) ai.status.textContent = aiEnabled() ? 'AI: enabled' : 'AI: unavailable';
+    updateButtons();
+  }
+  on(ai.toggle, 'change', updateAiStatus);
 
-  // Explain this step (use the last line in Steps if present, else the rule)
-  btnExplain?.addEventListener('click', async () => {
-    const stepsBox = document.querySelector('#outSteps');
-    const text = (stepsBox?.textContent || '').trim();
-    const lines = text.split(/\n+/).filter(Boolean);
-    const focus = lines[lines.length - 1] || 'Apply the order of operations.';
+  // ---------- Theme ----------
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+  function computeTheme(mode) {
+    if (mode === 'auto') return prefersDark.matches ? 'dark' : 'light';
+    return mode;
+  }
+  async function applyTheme(mode) {
+    const resolved = computeTheme(mode);
+    document.documentElement.setAttribute('data-theme', resolved);
+    sendThemeToMath(resolved);
+    try { await (chrome.storage?.local?.set?.({ [KEY_THEME]: mode })); } catch {}
+  }
+  // init theme
+  (async () => {
+    let mode = 'auto';
     try {
-      btnExplain.disabled = true; btnExplain.textContent = 'Explaining…';
-      const result = await W2Q_AI.explainStep(focus);
-      const hintsBox = document.querySelector('#outHints');
-      hintsBox.textContent = (hintsBox.textContent ? hintsBox.textContent + '\\n' : '') + 'Why: ' + result;
-    } catch (e) {
-      const hintsBox = document.querySelector('#outHints');
-      hintsBox.textContent = 'AI error: ' + (e.message || e);
-    } finally {
-      btnExplain.textContent = 'Explain this step (AI)';
-      refreshAI();
+      const stored = await (chrome.storage?.local?.get?.(KEY_THEME) || {});
+      if (stored && (stored[KEY_THEME] === 'light' || stored[KEY_THEME] === 'dark' || stored[KEY_THEME] === 'auto')) {
+        mode = stored[KEY_THEME];
+      }
+    } catch {}
+    if (themeSel) themeSel.value = mode;
+    applyTheme(mode);
+  })();
+  on(themeSel, 'change', () => applyTheme(themeSel.value));
+  prefersDark.addEventListener?.('change', () => {
+    if (themeSel?.value === 'auto') applyTheme('auto');
+  });
+  // reflect changes from other pages of the extension
+  chrome.storage?.onChanged?.addListener((changes, area) => {
+    if (area === 'local' && changes[KEY_THEME] && themeSel) {
+      const mode = changes[KEY_THEME].newValue || 'auto';
+      themeSel.value = mode;
+      applyTheme(mode);
     }
   });
 
-  // Generate printable variants (AI) -> for now just put the generated list into Steps; PDF export can be added later.
-  btnVariants?.addEventListener('click', async () => {
+  // ---------- button enable rules ----------
+  function updateButtons() {
+    const hasText = !!gen.input?.value.trim();
+    if (gen.trans) gen.trans.disabled = !hasText;
+    if (gen.extr)  gen.extr.disabled  = !hasText;
+    const allowAI = hasText && aiEnabled();
+    if (gen.sum)  gen.sum.disabled  = !allowAI;
+    if (gen.rewr) gen.rewr.disabled = !allowAI;
+  }
+  on(gen.input, 'input', () => { updateButtons(); sendToMath(gen.input.value); });
+
+  // ---------- selection bridge ----------
+  async function primeFromStorage() {
     try {
-      btnVariants.disabled = true; btnVariants.textContent = 'Generating…';
-      const list = await W2Q_AI.generateVariants(getProblem(), 12);
-      const stepsBox = document.querySelector('#outSteps');
-      stepsBox.textContent = list;
-    } catch (e) {
-      const stepsBox = document.querySelector('#outSteps');
-      stepsBox.textContent = 'AI error: ' + (e.message || e);
-    } finally {
-      btnVariants.textContent = 'Generate printable variants (AI)';
-      refreshAI();
+      const bucket = chrome.storage.session || chrome.storage.local;
+      const obj = await bucket.get(KEY_SELECTION);
+      if (obj && obj[KEY_SELECTION] && gen.input) {
+        gen.input.value = obj[KEY_SELECTION];
+        sendToMath(obj[KEY_SELECTION]);
+      }
+    } catch {}
+    setTimeout(updateButtons, 0);
+  }
+  chrome.storage?.onChanged?.addListener((changes, area) => {
+    if ((area === 'session' || area === 'local') && changes[KEY_SELECTION] && gen.input) {
+      const v = changes[KEY_SELECTION].newValue || '';
+      gen.input.value = v; updateButtons(); sendToMath(v);
     }
   });
 
-  const stepsToggle = document.querySelector('#stepsToggle');
-  stepsToggle?.addEventListener('click', ()=>{
-    const box=document.querySelector('#outSteps');
-    if(!box) return;
-    box.dataset.expanded = box.dataset.expanded === 'true' ? 'false' : 'true';
-    updateExpandable(box, stepsToggle);
-  });
-  wire();
-  await prefillFromStorage();
-  refreshAI();
-});
-
-// --- Mode toggle wiring ---
-const MODE_KEY = 'w2q_mode';
-
-function setMode(mode, { persist = true } = {}) {
-  const generalBtn = document.getElementById('mode-general');
-  const mathBtn    = document.getElementById('mode-math');
-  if (generalBtn) generalBtn.setAttribute('aria-selected', String(mode === 'general'));
-  if (mathBtn)    mathBtn.setAttribute('aria-selected', String(mode === 'math'));
-  document.body.dataset.mode = mode;
-  if (persist && chrome?.storage?.sync) {
-    try { chrome.storage.sync.set({ [MODE_KEY]: mode }); } catch {}
+  // ---------- local (non-AI) transforms ----------
+  const getText = () => (gen.input?.value || '').trim();
+  const writeOut = (v) => { if (gen.out) gen.out.value = Array.isArray(v) ? v.join('\n') : String(v || ''); };
+  const sentences = (t, n) => t.split(/(?<=[.!?])\s+|\n+/).map(s=>s.trim()).filter(Boolean).slice(0, n);
+  function extract(text, mode) {
+    const list = (xs) => (xs.length ? xs : ['(no matches)']).map(s => '• ' + s);
+    if (mode === 'highlights' || mode === 'key_points') return list(sentences(text, 5));
+    if (mode === 'tasks') {
+      const verbs = /^(add|remove|mix|stir|heat|cool|install|update|create|review|send|call|email|schedule)\b/i;
+      const lines = text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+      return list(lines.filter(l => verbs.test(l)));
+    }
+    if (mode === 'people') {
+      const re = /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b/g;
+      const set = new Set(); let m; while ((m = re.exec(text))) set.add(m[1]);
+      return list([...set]);
+    }
+    if (mode === 'dates') {
+      const re = /\b(?:\d{1,2}[\/.-]\d{1,2}(?:[\/.-]\d{2,4})?|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:,\s*\d{4})?)\b/gi;
+      return list(text.match(re) || []);
+    }
+    return list(sentences(text, 5));
   }
-}
-
-async function initMode() {
-  try {
-    const saved = chrome?.storage?.sync ? await chrome.storage.sync.get(MODE_KEY) : {};
-    setMode(saved[MODE_KEY] || 'general', { persist: false });
-  } catch {
-    setMode('general', { persist: false });
-  }
-  document.getElementById('mode-general')?.addEventListener('click', () => setMode('general'));
-  document.getElementById('mode-math')?.addEventListener('click', () => setMode('math'));
-  document.querySelector('.mode-toggle')?.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowRight') setMode('math');
-    if (e.key === 'ArrowLeft')  setMode('general');
+  on(gen.trans, 'click', () => {
+    const text = getText(); if (!text) return;
+    const lang = (gen.lang?.value || 'Spanish').toUpperCase();
+    writeOut(`[Translate → ${lang}]\n\n${text}`);
   });
-}
+  on(gen.extr, 'click', () => {
+    const text = getText(); if (!text) return;
+    writeOut(extract(text, gen.extrSel?.value || 'highlights'));
+  });
 
-// Listen for changes in whichever storage bucket we used
-(chrome.storage?.session || chrome.storage).onChanged.addListener((changes, area) => {
-  if (changes[KEY]?.newValue) setProblem(changes[KEY].newValue);
+  // ---------- AI-gated stubs ----------
+  function guardAI(run) {
+    if (!aiEnabled()) { writeOut('AI is disabled or unavailable. Enable AI features + on-device Gemini Nano.'); return; }
+    run();
+  }
+  on(gen.sum,  'click', () => guardAI(() => writeOut(['[Summary]', '', ...sentences(getText(), 3).map(s=>'• '+s)])));
+  on(gen.rewr, 'click', () => guardAI(() => {
+    const tone = (gen.tone?.value || 'friendly');
+    let out = getText();
+    if (tone === 'concise') out = sentences(out, 2).join(' ');
+    else if (tone === 'formal') out = out.replace(/\b(can't|won't|don't)\b/gi, m => ({ "can't":'cannot', "won't":'will not', "don't":'do not' }[m.toLowerCase()]));
+    else if (tone === 'simplify') out = out.replace(/\b(utilize|commence|purchase)\b/gi, m => ({ 'utilize':'use', 'commence':'start', 'purchase':'buy' }[m.toLowerCase()]));
+    writeOut(`[Rewrite • ${tone}]` + '\n\n' + out);
+  }));
+
+  // ---------- init ----------
+  updateAiStatus();
+  primeFromStorage();
 });
