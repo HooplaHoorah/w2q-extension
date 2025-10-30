@@ -1,7 +1,7 @@
 {
   "name": "Web-to-Quest",
   "description": "Turn on-page math into a guided quest. How to use: select an expression → right-click ‘Send selection → Web-to-Quest’ → Generate steps / Hint me → type answer → Check answer.",
-  "version": "0.1.0",
+"version": "0.1.4",
   "manifest_version": 3,
   "permissions": [
     "activeTab",
