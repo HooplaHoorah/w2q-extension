@@ -1,157 +1,139 @@
-// --- prototype.js (v3.7: CSP-safe, clean, namespaced) ---
-(function(g){
-  'use strict';
+// prototype.js — Math tab logic (MV3-safe; no eval)
 
-  function normalizeExpr(expr='') {
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const problem = $('#problem');
+  const answer  = $('#answer');
+  const stepsEl = $('#steps');
+  const hintsEl = $('#hints');
+  const result  = $('#result');
+
+  const btnSteps    = $('#btnSteps');
+  const btnHint     = $('#btnHint');
+  const btnCheck    = $('#btnCheck');
+  const btnVariants = $('#btnVariants');
+
+  // --- shunting-yard parser (+, -, *, /, parentheses; supports × ÷ chars) ---
+  function normalize(expr) {
     return (expr || '')
-      .replace(/×/g, '*')
+      .replace(/[×xX]/g, '*')
       .replace(/÷/g, '/')
-      .replace(/−/g, '-')
-      .replace(/,/g, '')
-      .trim();
+      .replace(/–|—/g, '-')
+      .replace(/[^0-9+\-*/().\s]/g, '');
   }
-
-  function tokenize(s) {
+  function tokenize(expr) {
+    const src = normalize(expr).trim();
     const tokens = [];
+    const num = /^(?:\d+(?:\.\d*)?|\.\d+)/;
     let i = 0;
-    while (i < s.length) {
-      const ch = s[i];
-      if (/\s/.test(ch)) { i++; continue; }
-      if (/[()+\-*/]/.test(ch)) {
-        if (ch === '-' && (tokens.length === 0 || /[+\-*/(]/.test(tokens[tokens.length-1]))) {
-          tokens.push('u-');
-        } else {
-          tokens.push(ch);
+    while (i < src.length) {
+      const c = src[i];
+      if (/\s/.test(c)) { i++; continue; }
+      if ('+-*/()'.includes(c)) {
+        if (c === '-') {
+          const prev = tokens[tokens.length - 1];
+          if (!prev || (prev.type === 'op' && prev.value !== ')') || (prev.type === 'paren' && prev.value === '(')) {
+            tokens.push({ type: 'num', value: 0 });
+            tokens.push({ type: 'op', value: '-' });
+            i++; continue;
+          }
         }
+        tokens.push(c === '(' || c === ')' ? { type: 'paren', value: c } : { type: 'op', value: c });
         i++; continue;
       }
-      if (/\d|\./.test(ch)) {
-        let j = i, dot = 0;
-        while (j < s.length && /[\d.]/.test(s[j])) {
-          if (s[j] === '.') { dot++; if (dot > 1) break; }
-          j++;
-        }
-        const num = s.slice(i, j);
-        if (!/^\d*\.?\d+$/.test(num)) return null;
-        tokens.push(num);
-        i = j; continue;
-      }
+      const m = src.slice(i).match(num);
+      if (m) { tokens.push({ type: 'num', value: parseFloat(m[0]) }); i += m[0].length; continue; }
       return null;
     }
     return tokens;
   }
-
-  function evalSafe(expr) {
-    const s = normalizeExpr(expr);
-    if (!s) return NaN;
-    const tokens = tokenize(s);
-    if (!tokens) return NaN;
-
-    const prec = { 'u-':3, '*':2, '/':2, '+':1, '-':1 };
-    const rightAssoc = { 'u-': true };
-    const out = [];
-    const ops = [];
-
-    function pop() {
-      const op = ops.pop();
-      if (op === 'u-') {
-        const a = out.pop();
-        out.push(-a);
-      } else {
-        const b = out.pop(), a = out.pop();
-        if (a === undefined || b === undefined) throw new Error('bad expression');
-        switch(op){
-          case '+': out.push(a+b); break;
-          case '-': out.push(a-b); break;
-          case '*': out.push(a*b); break;
-          case '/': out.push(a/b); break;
-        }
-      }
-    }
-
+  const prec = { '+':1, '-':1, '*':2, '/':2 };
+  function toRPN(tokens) {
+    if (!tokens) return null;
+    const out = [], ops = [];
     for (const t of tokens) {
-      if (/^\d*\.?\d+$/.test(t)) {
-        out.push(parseFloat(t));
-      } else if (t in prec) {
-        while (ops.length) {
-          const top = ops[ops.length-1];
-          if (top in prec && ((rightAssoc[t] && prec[t] < prec[top]) || (!rightAssoc[t] && prec[t] <= prec[top]))) {
-            pop();
-          } else break;
-        }
+      if (t.type === 'num') out.push(t);
+      else if (t.type === 'op') {
+        while (ops.length && ops[ops.length-1].type === 'op' && prec[ops[ops.length-1].value] >= prec[t.value]) out.push(ops.pop());
         ops.push(t);
-      } else if (t === '(') {
-        ops.push(t);
-      } else if (t === ')') {
-        while (ops.length && ops[ops.length-1] !== '(') pop();
-        if (ops.pop() !== '(') return NaN;
-      } else {
-        return NaN;
+      } else if (t.type === 'paren' && t.value === '(') ops.push(t);
+      else if (t.type === 'paren' && t.value === ')') {
+        let found = false;
+        while (ops.length) { const k = ops.pop(); if (k.type === 'paren' && k.value === '(') { found = true; break; } out.push(k); }
+        if (!found) return null;
       }
     }
-    while (ops.length) {
-      if (ops[ops.length-1] === '(') return NaN;
-      pop();
-    }
-    const res = out.pop();
-    return (out.length === 0 && Number.isFinite(res)) ? res : NaN;
+    while (ops.length) { const k = ops.pop(); if (k.type === 'paren') return null; out.push(k); }
+    return out;
   }
-
-  function generateSteps(expr='') {
-    const s = normalizeExpr(expr);
-    if (!s) return 'Enter or send a problem first.';
-    const steps = [];
-    steps.push(`Original: ${s}`);
-    steps.push('Rule: Do multiplication and division before addition and subtraction.');
-
-    // Avoid leaking partials across groups
-    if (/[()]/.test(s)) return steps.join('\n');
-
-    if (/[*\/]/.test(s)) {
-      try {
-        const mid = s.replace(/(-?\d+(?:\.\d+)?)\s*([*/])\s*(-?\d+(?:\.\d+)?)/g, (m,a,op,b)=> {
-          const av = parseFloat(a), bv = parseFloat(b);
-          return op === '*' ? (av*bv).toString() : (av/bv).toString();
-        });
-        if (mid !== s) steps.push(`After × and ÷: ${mid}`);
-      } catch {}
-    } else if (/[+\-]/.test(s)) {
-      const m = s.match(/^\s*(-?\d+(?:\.\d+)?)\s*([+\-])\s*(-?\d+(?:\.\d+)?)/);
-      if (m) {
-        const a = parseFloat(m[1]), op = m[2], b = parseFloat(m[3]);
-        const partial = (op === '+') ? (a + b) : (a - b);
-        const tail = s.slice(m[0].length);
-        const after = String(partial) + tail;
-        steps.push(`After first +/−: ${after}`);
+  function evalRPN(rpn) {
+    if (!rpn) return NaN;
+    const st = [];
+    for (const t of rpn) {
+      if (t.type === 'num') st.push(t.value);
+      else if (t.type === 'op') {
+        const b = st.pop(), a = st.pop(); if (a === undefined || b === undefined) return NaN;
+        st.push(t.value === '+' ? a + b :
+                t.value === '-' ? a - b :
+                t.value === '*' ? a * b :
+                t.value === '/' ? (b === 0 ? NaN : a / b) : NaN);
       }
     }
-    return steps.join('\n');
+    return st.length === 1 ? st[0] : NaN;
+  }
+  function evaluate(expr) { return evalRPN(toRPN(tokenize(expr))); }
+
+  // --- UI helpers
+  function setList(listEl, items) {
+    listEl.innerHTML = '';
+    (items || []).forEach(t => { const li = document.createElement('li'); li.textContent = t; listEl.appendChild(li); });
+  }
+  function showResult(ok, msg) {
+    result.style.display = 'block';
+    result.className = 'out ' + (ok ? 'ok' : 'no');
+    result.textContent = msg;
   }
 
-  function genHint(expr='') {
-    const s = normalizeExpr(expr);
-    if (!s) return 'Hint: enter a problem like 12 + 5 × 3 or (12 - 5) + 3.';
-    const hints = ['Combine × and ÷ first, then + and − left-to-right.'];
-    if (/(\()/.test(s)) hints.push('Work inside parentheses before anything else.');
-    if (/[*\/]/.test(s) && /[+\-]/.test(s)) hints.push('Rewrite × as * and ÷ as / if needed.');
-    return hints.join(' ');
-  }
+  // --- actions
+  btnSteps?.addEventListener('click', () => {
+    const expr = problem.value || '';
+    const items = [];
+    if (/[()]/.test(expr)) items.push('Evaluate any parentheses first.');
+    if (/[*/×÷]/.test(expr)) items.push('Compute all multiplication and division from left to right.');
+    if (/[+\-]/.test(expr))  items.push('Then compute addition and subtraction from left to right.');
+    // (No "Final value" here — reserved for Check answer.)
+    setList(stepsEl, items);
+  });
 
-  function checkAnswer(expr='', answer='') {
-    const expected = evalSafe(expr);
-    if (!Number.isFinite(expected)) return { ok:false, verdict: 'Could not evaluate the problem.' };
-    const a = parseFloat(String(answer).trim());
-    if (!Number.isFinite(a)) return { ok:false, verdict: 'Please enter a numeric answer.' };
-    const ok = Math.abs(a - expected) < 1e-9;
-    return { ok, verdict: ok ? 'Correct ✔' : `Not equal: expected ${expected}, you entered ${a}` };
-  }
+  btnHint?.addEventListener('click', () => {
+    const expr = problem.value || '';
+    const items = [
+      'Remember PEMDAS: Parentheses → Exponents → Multiply/Divide → Add/Subtract.',
+      'Replace “×” with * and “÷” with / if typing.',
+      'Work from left to right for operations with the same priority.',
+    ];
+    if (/\d+\s*[×xX*]\s*\d+/.test(expr)) items.unshift('Compute multiplication parts first.');
+    setList(hintsEl, items);
+  });
 
-  // Namespace export
-  g.W2Q = g.W2Q || {};
-  g.W2Q.normalizeExpr = normalizeExpr;
-  g.W2Q.evalSafe      = evalSafe;
-  g.W2Q.generateSteps = generateSteps;
-  g.W2Q.genHint       = genHint;
-  g.W2Q.checkAnswer   = checkAnswer;
+  btnCheck?.addEventListener('click', () => {
+    const want = Number(answer.value);
+    const got  = evaluate(problem.value);
+    if (!Number.isFinite(got)) { showResult(false, 'The problem could not be parsed. Please check the expression.'); return; }
+    const ok = Math.abs(want - got) < 1e-9;
+    showResult(ok, ok ? 'Correct!' : `Not quite. The correct answer is ${got}.`);
+  });
 
-})(globalThis);
+  btnVariants?.addEventListener('click', () => {
+    const base = normalize(problem.value) || '12 + 5 * 3';
+    const variants = [
+      base.replace(/\b12\b/, '10'),
+      base.replace(/\b5\b/, '6'),
+      base.replace(/\b3\b/, '4'),
+    ];
+    setList(hintsEl, variants.map(v => `Try: ${v}`));
+  });
+
+  problem?.addEventListener('input', () => { result.style.display = 'none'; });
+  answer ?.addEventListener('input', () => { result.style.display = 'none'; });
+})();

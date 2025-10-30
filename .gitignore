@@ -3,4 +3,11 @@ node_modules/
 dist/
 *.log
 
+# Local backups / artifacts kept out of the repo
 extension_old/
+
+# Design source files (not tracked)
+*.psd
+
+# Any local automation notes (don’t commit helper docs)
+*agent*instructions*.md
