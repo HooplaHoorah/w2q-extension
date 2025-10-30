@@ -1,105 +1,155 @@
 <!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Web-to-Quest</title>
-    <style>
-      :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-      body { margin: 12px; }
-      h3 { margin: 16px 0 8px; }
-      textarea, input[type="text"] { width: 100%; box-sizing: border-box; padding: 8px; font-size: 14px; }
-      textarea { min-height: 70px; }
-      button { padding: 8px 10px; font-size: 14px; margin: 6px 6px 6px 0; cursor: pointer; }
-      .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-      .out { border: 1px solid #ddd; padding: 8px; border-radius: 6px; min-height: 40px; margin: 6px 0; white-space: pre-wrap; }
-      .out[data-expandable] { max-height: 160px; overflow: hidden; transition: max-height .25s ease; }
-      .out[data-expanded="true"] { max-height: none; overflow: visible; }
-      .linkbtn { border: none; background: none; color: #0b57d0; padding: 0; cursor: pointer; font: inherit; }
-      .linkbtn:hover { text-decoration: underline; }
-      .muted { color: #666; }
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Web-to-Quest</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-      .mode-toggle { display: flex; gap: 8px; margin: 8px 0 12px; }
-      .mode-btn { padding: 6px 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
-      .mode-btn[aria-selected="true"] { border-color: #4285f4; box-shadow: 0 0 0 2px rgba(66,133,244,.15); }
+  <!-- Theme styles (Light / Dark / System) -->
+  <style>
+    :root{
+      --bg:#ffffff; --panel:#f7f7fb; --text:#0d1220; --muted:#606b85;
+      --stroke:#d8dbe8; --field:#ffffff; --accent:#2b7cff;
+      --tab:#e9ecf6; --tabActive:#d7def5;
+    }
+    :root[data-theme="dark"]{
+      --bg:#0f1b2d; --panel:#121f38; --text:#e6edf7; --muted:#a8b2c3;
+      --stroke:#2b3b5c; --field:#0d1a30; --accent:#68a2ff;
+      --tab:#0e203b; --tabActive:#123056;
+    }
 
-      /* Show/Hide sections by mode (wrapping comes in Step 4) */
-      .for-general, .for-math { display: none; }
-      body[data-mode="general"] .for-general { display: block; }
-      body[data-mode="math"]    .for-math    { display: block; }
+    html, body { background:var(--bg); color:var(--text); }
+    body { margin:10px; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
 
-    </style>
-  </head>
-  <body>
+    /* Tabs */
+    .tabs { display:flex; gap:8px; margin-bottom:10px; }
+    .tabs button{
+      border:1px solid var(--stroke); background:var(--tab); color:var(--text);
+      padding:6px 10px; border-radius:6px; cursor:pointer;
+    }
+    .tabs button[aria-selected="true"]{
+      background:var(--tabActive); font-weight:600;
+      outline:1px solid var(--stroke);
+    }
 
-<!-- Mode toggle -->
-<nav class="mode-toggle" role="tablist" aria-label="Mode">
-  <button id="mode-general" class="mode-btn" role="tab" aria-selected="true" data-mode="general">
-    General
-  </button>
-  <button id="mode-math" class="mode-btn" role="tab" aria-selected="false" data-mode="math">
-    Math
-  </button>
-</nav>
+    .header { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+    .group  { background:var(--panel); border:1px solid var(--stroke); border-radius:8px; padding:12px; margin:10px 0; }
+    label   { display:block; margin:8px 0 4px; color:var(--muted); }
+    .row    { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
 
+    textarea, input, select{
+      width:100%; box-sizing:border-box; padding:8px; margin:6px 0;
+      background:var(--field); color:var(--text);
+      border:1px solid var(--stroke); border-radius:6px;
+    }
+    button{
+      background:var(--field); color:var(--text);
+      border:1px solid var(--stroke); border-radius:6px;
+      padding:6px 10px; cursor:pointer;
+    }
+    button:hover, select:focus, textarea:focus, input:focus{
+      outline:0; border-color:var(--accent);
+    }
+    a { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
 
-  <!-- AI status row -->
-<div id="aiStatusRow" style="display:flex;gap:12px;align-items:center;margin:.5rem 0;">
-  <span id="aiStatus" class="muted">AI: checking…</span>
-  <a id="aiHelp" class="muted" href="./help/ai.html" target="_blank">Help → How to enable AI</a>
-</div>    </div>
+    /* Mode visibility */
+    [data-mode="math"]    #general-tools { display:none; }
+    [data-mode="general"] #math-tools    { display:none; }
+  </style>
+</head>
 
-    <div class="info" id="howto" style="border:1px solid #e0e0e0;background:#fafafa;padding:10px;border-radius:8px;margin-bottom:12px;">
-      <strong>How to use</strong>
-      <ol style="margin:8px 0 0 18px;padding:0;">
-        <li>Select a math expression on any page.</li>
-        <li>Right‑click → <em>Send selection → Web‑to‑Quest</em> (or paste into <strong>Problem</strong>).</li>
-        <li>Click <strong>Generate steps</strong> and/or <strong>Hint me</strong> for guidance.</li>
-        <li>Type your answer, then click <strong>Check answer</strong>. The correct result is only shown here.</li>
-      </ol>
-    
-</div>
-
-    <div class="info" id="settings" style="border:1px solid #e0e0e0;background:#f6fbff;padding:10px;border-radius:8px;margin-bottom:12px;">
-      <strong>Settings</strong>
-      <div style="margin-top:6px; display:flex; align-items:center; gap:10px;">
-        <label><input type="checkbox" id="aiToggle"> Enable AI features (Gemini Nano, if available)</label>
-        <!-- The AI status is now displayed in its own row; this span is removed. -->
-      </div>
-    </div>
-
-    <section class="for-math">
-<h3>Problem</h3>
-    <textarea id="problem" name="problem" placeholder="Select text, then right-click → Send selection → Web-to-Quest."></textarea>
-    <div class="row">
-      <button data-btn="steps" id="btnSteps">Generate steps</button>
-      <button data-btn="hint" id="btnHint">Hint me</button>
-      <button data-btn="explain" id="btnExplain" data-ai-only disabled title="Enable AI in Settings">Explain this step (AI)</button>
-    </div>
-
-    <h3 id="answer-label">Answer</h3>
-    <input id="answer" name="answer" type="text" autocomplete="off" placeholder="Type your answer…" />
-    <div>
-      <button data-btn="check" id="btnCheck">Check answer</button>
-      <button data-btn="variants" id="btnVariants" data-ai-only disabled title="Enable AI in Settings">Generate printable variants (AI)</button>
-    </div>
-
-    <h3>Outputs</h3>
-    <div class="muted" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">Steps <button class="linkbtn" id="stepsToggle" hidden>Show all</button></div>
-    <div class="out" id="outSteps" data-expandable></div>
-    <div class="muted">Hints</div>
-    <div class="out" id="outHints"></div>
-    <div class="muted">Check Answer</div>
-    <div class="out" id="outAnswer"></div>
-
-    </section>
-<section class="for-general">
-  <div class="info" id="generalIntro" style="border:1px solid #e0e0e0;background:#f9fbff;padding:10px;border-radius:8px;margin-bottom:12px;">
-    <strong>General mode</strong>
-    <div class="muted">Select text on any page, then open the side panel to <strong>Summarize</strong>, <strong>Rewrite/Proofread</strong>, <strong>Translate</strong>, or <strong>Extract</strong> answers/highlights.</div>
+<body data-mode="general">
+  <div class="tabs">
+    <button id="mode-general" role="tab" aria-selected="true">General</button>
+    <button id="mode-math" role="tab" aria-selected="false">Math</button>
   </div>
-</section>
-<script src="prototype.js" defer></script>
-    <script src="ai-stubs.js" defer></script>
-    <script src="sidepanel.js" defer></script>
-  </body>
+
+  <div class="header">
+    <strong id="aiStatus">AI: unavailable</strong>
+    <a href="#" id="helpLink">Help → How to enable AI</a>
+  </div>
+
+  <div class="group">
+    <h3>How to use</h3>
+    <ol>
+      <li>Select text on any page.</li>
+      <li>Right-click → <em>Send selection → Web-to-Quest</em> (or paste into Input).</li>
+      <li>Use the buttons below (Summarize/Rewrite/Translate/Extract).</li>
+      <li><strong>Note:</strong> Summarize/Rewrite require on-device AI (Gemini Nano). If unavailable,
+          those buttons stay disabled. Translate/Extract work everywhere.</li>
+    </ol>
+  </div>
+
+  <div class="group">
+    <h3>Settings</h3>
+    <div class="row">
+      <label style="margin:0;"><input type="checkbox" id="aiToggle" /> Enable AI features (Gemini Nano, if available)</label>
+    </div>
+    <div class="row" style="margin-top:6px;">
+      <label for="themeSel" style="margin:0;"><strong>Theme</strong></label>
+      <select id="themeSel" style="width:auto;">
+        <option value="auto">System</option>
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- GENERAL TOOLS -->
+  <div class="group" id="general-tools">
+    <h3>General tools</h3>
+
+    <label for="genInput"><strong>Input</strong></label>
+    <textarea id="genInput" rows="6"
+      placeholder="Select text, then right-click → Send selection → Web-to-Quest (or paste here)."></textarea>
+
+    <div class="row" style="margin-top:8px;">
+      <button id="genSummarize" disabled>Summarize</button>
+      <button id="genRewrite"  disabled>Rewrite</button>
+      <select id="genTone" style="width:auto;">
+        <option value="friendly">Friendly</option>
+        <option value="concise">Concise</option>
+        <option value="formal">Formal</option>
+        <option value="simplify">Simplify</option>
+      </select>
+    </div>
+
+    <div class="row" style="margin-top:8px;">
+      <button id="genTranslate" disabled>Translate</button>
+      <select id="genLang" style="width:auto;">
+        <option>Spanish</option>
+        <option>French</option>
+        <option>German</option>
+        <option>Italian</option>
+        <option>Portuguese</option>
+      </select>
+    </div>
+
+    <div class="row" style="margin-top:8px;">
+      <button id="genExtract" disabled>Extract</button>
+      <select id="genExtractType" style="width:auto;">
+        <option value="highlights">Highlights</option>
+        <option value="tasks">Action items</option>
+        <option value="key_points">Key terms</option>
+        <option value="people">People</option>
+        <option value="dates">Dates</option>
+      </select>
+    </div>
+
+    <label for="genOut" style="margin-top:10px;"><strong>Result</strong></label>
+    <textarea id="genOut" rows="8" readonly
+      placeholder="Results appear here. Tip: Translate/Extract work without AI. Summarize/Rewrite require Enable AI features + on-device Gemini Nano."></textarea>
+  </div>
+
+  <!-- MATH TAB -->
+  <div class="group" id="math-tools">
+    <iframe id="mathFrame"
+            src="prototype.html"
+            style="width:100%; height:640px; border:0; border-radius:6px; background:#fff;"></iframe>
+  </div>
+
+  <!-- JS -->
+  <script src="sidepanel.js" defer></script>
+</body>
 </html>

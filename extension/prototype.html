@@ -1,36 +1,83 @@
 <!doctype html>
-<meta charset="utf-8">
-<title>Web-to-Quest Prototype</title>
-<style>
-  body { font: 14px system-ui, -apple-system, Segoe UI, Roboto, Arial; margin:0; padding:10px; }
-  .col { max-width: 360px; }
-  textarea, input { width:100%; box-sizing:border-box; padding:8px; margin:6px 0; }
-  button { padding:6px 10px; margin:4px 4px 4px 0; }
-  .out { border:1px dashed #aac; padding:8px; min-height:40px; background:#f7f9ff; }
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Web-to-Quest • Math</title>
+  <style>
+  /* Light/Dark tokens */
+  :root{
+    --bg:#ffffff; --panel:#ffffff; --text:#0d1220; --muted:#606b85;
+    --stroke:#d8dbe8; --field:#ffffff;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1b2d; --panel:#0f1b2d; --text:#e6edf7; --muted:#a8b2c3;
+    --stroke:#2b3b5c; --field:#0d1a30;
+  }
+
+  /* Your original layout, now using the tokens */
+  body { font:14px system-ui,-apple-system,Segoe UI,Roboto,Arial; margin:0; padding:10px;
+         background:var(--bg); color:var(--text); }
+  .col { max-width:360px; }
+
+  textarea, input {
+    width:100%; box-sizing:border-box; padding:8px; margin:6px 0;
+    background:var(--field); color:var(--text);
+    border:1px solid var(--stroke); border-radius:6px;
+  }
+
+  button {
+    padding:6px 10px; margin:6px 6px 6px 0;
+    background:var(--field); color:var(--text);
+    border:1px solid var(--stroke); border-radius:6px; cursor:pointer;
+  }
+
+  /* dashed output boxes */
+  .out { outline:1px dashed var(--stroke); padding:8px; min-height:48px; background:transparent; }
+
+  h4 { margin:12px 0 6px; color:var(--muted); }
+
+  /* only visible after Check answer */
+  #result { display:none; }
+  .ok { color:#0a7b22; font-weight:600; }
+  .no { color:#b00020; font-weight:600; }
 </style>
 
-<div class="col">
-  <h3>Problem</h3>
-  <textarea id="problem" placeholder="Your highlighted text will appear here…"></textarea>
-  <div>
-    <button id="btnSteps">Generate steps</button>
-    <button id="btnHint">Hint me</button>
+</head>
+<body>
+  <div class="col">
+    <!-- Problem -->
+    <h4>Problem</h4>
+    <textarea id="problem" rows="3" placeholder="Your highlighted text will appear here…"></textarea>
+    <div>
+      <button id="btnSteps">Generate steps</button>
+      <button id="btnHint">Hint me</button>
+    </div>
+
+    <!-- Answer -->
+    <h4>Answer</h4>
+    <input id="answer" placeholder="Enter answer" />
+    <div>
+      <button id="btnCheck">Check answer</button>
+    </div>
+
+    <!-- Printable variants -->
+    <div style="margin-top:10px">
+      <button id="btnVariants">Generate printable variants</button>
+    </div>
+
+    <!-- Outputs -->
+    <h4 style="margin-top:16px">Steps</h4>
+    <ol id="steps" class="out"></ol>
+
+    <h4 style="margin-top:8px">Hints</h4>
+    <ul id="hints" class="out"></ul>
+
+    <div id="result" class="out" style="margin-top:8px"></div>
   </div>
 
-  <h4>Answer</h4>
-  <input id="answer" placeholder="Enter answer" />
-  <button id="btnCheck">Check answer</button>
-
-  <div style="margin-top:10px">
-    <button id="btnVariants">Generate printable variants</button>
-  </div>
-
-  <h3 style="margin-top:16px">Outputs</h3>
-  <div><b>Steps</b></div>
-  <ol id="stepsOut" class="out"></ol>
-  <div style="margin-top:8px"><b>Hints</b></div>
-  <ul id="hintsOut" class="out"></ul>
-  <div id="result" class="out" style="margin-top:8px"></div>
-</div>
-
-<script src="prototype.js"></script>
+  <!-- Math logic + bridge (external, CSP-safe) -->
+  <script src="prototype.js" defer></script>
+  <script src="prototype-bridge.js" defer></script>
+</body>
+</html>

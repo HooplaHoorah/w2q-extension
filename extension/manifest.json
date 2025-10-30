@@ -1,21 +1,17 @@
 {
   "name": "Web-to-Quest",
-  "description": "Turn on-page math into a guided quest. How to use: select an expression → right‑click ‘Send selection → Web‑to‑Quest’ → Generate steps / Hint me → type answer → Check answer.",
+  "description": "Turn on-page math into a guided quest. How to use: select an expression → right-click ‘Send selection → Web-to-Quest’ → Generate steps / Hint me → type answer → Check answer.",
   "version": "0.1.0",
   "manifest_version": 3,
   "permissions": [
     "activeTab",
     "contextMenus",
-    "sidePanel",
     "storage",
-    "tabs"
+    "tabs",
+    "sidePanel"
   ],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "side_panel": {
-    "default_path": "sidepanel.html"
-  },
+  "background": { "service_worker": "background.js" },
+  "side_panel": { "default_path": "sidepanel.html" },
   "icons": {
     "16": "icon16.png",
     "48": "icon48.png",
