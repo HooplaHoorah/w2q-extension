@@ -18,21 +18,20 @@ Turn on-page text into a guided quest.
 
 ## Screenshots
 
-> If your filenames differ, adjust the image paths below. Put PNGs in `demo/screenshots/`.
-
 <p align="center">
-  <img src="demo/screenshots/01-context-menu.png" width="45%" alt="Context menu">
-  <img src="demo/screenshots/02-general-input.png" width="45%" alt="General: Input"><br/>
-  <img src="demo/screenshots/03-translate.png" width="45%" alt="General: Translate">
-  <img src="demo/screenshots/04-extract.png" width="45%" alt="General: Extract"><br/>
-  <img src="demo/screenshots/05-math.png" width="45%" alt="Math tab">
-  <img src="demo/screenshots/06-theme.png" width="45%" alt="Theme toggle"><br/>
-  <img src="demo/screenshots/07-optional-gemini-nano.png" width="45%" alt="Optional Gemini Nano">
-  <img src="demo/screenshots/08-generate-steps.png" width="45%" alt="Generate steps"><br/>
-  <img src="demo/screenshots/09-hint-me.png" width="45%" alt="Hint me">
-  <img src="demo/screenshots/10-check-answer.png" width="45%" alt="Check answer"><br/>
-  <img src="demo/screenshots/11-generate-printable-variants.png" width="45%" alt="Printable variants">
+  <img src="demo/screenshots/01-context-menu-16x9.png" alt="Context menu" width="45%"/>
+  <img src="demo/screenshots/02-General%20tab%20Input%20-16x9.png" alt="General: Input" width="45%"/><br/>
+  <img src="demo/screenshots/03-Translate%20-16x9.png" alt="General: Translate" width="45%"/>
+  <img src="demo/screenshots/04-Extract%20-16x9.png" alt="General: Extract" width="45%"/><br/>
+  <img src="demo/screenshots/05-%20Math%20-16x9.png" alt="Math tab" width="45%"/>
+  <img src="demo/screenshots/06-%20theme%20-16x9.png" alt="Theme toggle" width="45%"/><br/>
+  <img src="demo/screenshots/07-%20optional%20Gemini%20Nano%20-16x9.png" alt="Optional: Gemini Nano" width="45%"/>
+  <img src="demo/screenshots/08-%20Generate%20steps%20-16x9.png" alt="Generate steps" width="45%"/><br/>
+  <img src="demo/screenshots/09-%20Hint%20me%20-16x9.png" alt="Hint me" width="45%"/>
+  <img src="demo/screenshots/10-%20Check%20answer%20-16x9.png" alt="Check answer" width="45%"/><br/>
+  <img src="demo/screenshots/11-%20Generate%20printable%20variants%20-16x9.png" alt="Generate printable variants" width="45%"/>
 </p>
+
 
 ---
 
