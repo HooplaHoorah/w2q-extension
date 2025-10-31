@@ -29,7 +29,7 @@ Turn on-page text into a guided quest.
   <img src="demo/screenshots/08-%20Generate%20steps%20-16x9.png" alt="Generate steps" width="45%"/><br/>
   <img src="demo/screenshots/09-%20Hint%20me%20-16x9.png" alt="Hint me" width="45%"/>
   <img src="demo/screenshots/10-%20Check%20answer%20-16x9.png" alt="Check answer" width="45%"/><br/>
-  <img src="demo/screenshots/11-generate-printable-variants-16x9.png" alt="Generate printable variants" width="45%"/>
+ <img src="demo/screenshots/11-generate-printable-variants-16x9.png" alt="Generate printable variants" width="45%" />
 </p>
 
 
